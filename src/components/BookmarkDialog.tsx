@@ -255,7 +255,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
                                 <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select a status" />
-                                    </SelectTrigger>
+                                    </Trigger>
                                 </FormControl>
                                 <SelectContent>
                                     {readingStatuses.map(status => (
