@@ -1,7 +1,7 @@
 
 "use client";
 import React, { useState, useMemo } from 'react';
-import type { Bookmark, SortOrder, ViewLayout, ReadingStatus } from "@/types";
+import type { Bookmark, SortOrder, ViewLayout, ReadingStatus, BookmarkHistory } from "@/types";
 import BookmarkCard from "./BookmarkCard";
 import BookmarkListItem from './BookmarkListItem';
 import { BookOpenCheck, SearchX, Trash2, CheckCircle2, ChevronDown, Filter, LayoutGrid, List, Star, Tags, Book, ChevronsUpDown, Rows } from "lucide-react";
@@ -25,14 +25,15 @@ interface BookmarkListProps {
   bookmarks: Bookmark[];
   readingStatuses: ReadingStatus[];
   onDelete: (ids: string[]) => void;
-  onEditSubmit: (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite'>, id?: string) => void;
   onToggleFavorite: (id: string) => void;
   onUpdateChapter: (id: string, newChapter: number) => void;
   onUpdateStatus: (ids: string[], statusId: string) => void;
   allTags: string[];
+  onEditSubmit: (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'history'>, id?: string) => void;
+  onRevert: (bookmarkId: string, historyEntry: BookmarkHistory) => void;
 }
 
-export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onEditSubmit, onToggleFavorite, onUpdateChapter, onUpdateStatus, allTags }: BookmarkListProps) {
+export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onToggleFavorite, onUpdateChapter, onUpdateStatus, allTags, onEditSubmit, onRevert }: BookmarkListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("lastUpdatedDesc");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -61,8 +62,14 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onE
     setIsDialogOpen(false);
   };
 
-  const handleEditSave = (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite'>, id?: string) => {
+  const handleEditSave = (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'history'>, id?: string) => {
     onEditSubmit(data, id);
+    handleEditorClose();
+  };
+  
+  const handleRevert = (bookmarkId: string, historyEntry: BookmarkHistory) => {
+    onRevert(bookmarkId, historyEntry);
+    // After reverting, we can close the editor as the state is now updated.
     handleEditorClose();
   };
 
@@ -365,6 +372,7 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onE
               onEdit={handleEdit} 
               onToggleFavorite={onToggleFavorite}
               onUpdateChapter={onUpdateChapter}
+              onDelete={onDelete}
               isSelected={selectedBookmarks.includes(bookmark.id)}
               onSelectionChange={handleSelectionChange}
               isCompact={isCompact}
@@ -381,6 +389,7 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onE
               onEdit={handleEdit} 
               onToggleFavorite={onToggleFavorite}
               onUpdateChapter={onUpdateChapter}
+              onDelete={onDelete}
               isSelected={selectedBookmarks.includes(bookmark.id)}
               onSelectionChange={handleSelectionChange}
               isCompact={isCompact}
@@ -393,6 +402,7 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onE
             open={isSheetOpen}
             onOpenChange={setIsSheetOpen}
             onSubmit={handleEditSave}
+            onRevert={handleRevert}
             bookmark={editingBookmark}
             readingStatuses={readingStatuses}
           />
@@ -401,6 +411,7 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onE
             open={isDialogOpen}
             onOpenChange={setIsDialogOpen}
             onSubmit={handleEditSave}
+            onRevert={handleRevert}
             bookmark={editingBookmark}
             readingStatuses={readingStatuses}
         />

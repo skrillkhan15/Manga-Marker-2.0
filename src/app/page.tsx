@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import type { Bookmark, View, ReadingStatus, BackupData } from "@/types";
+import type { Bookmark, View, ReadingStatus, BackupData, BookmarkHistory } from "@/types";
 import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarTrigger, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { BookMarked, LayoutDashboard, List, Loader2, Settings } from 'lucide-react';
@@ -22,6 +22,8 @@ const defaultStatuses: ReadingStatus[] = [
     { id: 'dropped', label: 'Dropped', color: '#ef4444' },
     { id: 'plan-to-read', label: 'Plan to Read', color: '#6b7280' }
 ];
+
+const MAX_HISTORY = 5;
 
 export default function Home() {
   const [bookmarks, setBookmarks] = useLocalStorage<Bookmark[]>("manga-bookmarks", []);
@@ -49,11 +51,19 @@ export default function Home() {
   }, [bookmarks, readingStatuses]);
 
 
-  const addOrUpdateBookmark = (bookmark: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite'>, id?: string) => {
+  const addOrUpdateBookmark = (bookmark: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'history'>, id?: string) => {
     setBookmarks(prev => {
       const now = new Date().toISOString();
       if (id) { // Editing
-        return prev.map(b => b.id === id ? { ...b, ...bookmark, lastUpdated: now } : b);
+        const existingBookmark = prev.find(b => b.id === id);
+        if (!existingBookmark) return prev;
+
+        // Create a history entry from the current state before updating
+        const { history, ...currentState } = existingBookmark;
+        const newHistoryEntry: BookmarkHistory = { state: currentState, date: now };
+        const updatedHistory = [newHistoryEntry, ...(history || [])].slice(0, MAX_HISTORY);
+
+        return prev.map(b => b.id === id ? { ...b, ...bookmark, history: updatedHistory, lastUpdated: now } : b);
       } else { // Adding new
         const newBookmark: Bookmark = {
           ...bookmark,
@@ -73,6 +83,24 @@ export default function Home() {
         }
         return [newBookmark, ...prev];
       }
+    });
+  };
+
+  const revertBookmark = (bookmarkId: string, historyEntry: BookmarkHistory) => {
+    setBookmarks(prev => {
+        return prev.map(b => {
+            if (b.id === bookmarkId) {
+                // The state from history becomes the new bookmark state
+                // We keep the existing history but remove the one we are reverting to
+                const newHistory = b.history?.filter(h => h.date !== historyEntry.date) || [];
+                return { ...historyEntry.state, history: newHistory };
+            }
+            return b;
+        });
+    });
+    toast({
+        title: "Bookmark Reverted",
+        description: `"${historyEntry.state.title}" has been restored to a previous version.`,
     });
   };
 
@@ -98,12 +126,24 @@ export default function Home() {
   };
   
   const updateChapter = (id: string, newChapter: number) => {
-    setBookmarks(prev => prev.map(b => b.id === id ? { ...b, chapter: newChapter >= 0 ? newChapter : 0, lastUpdated: new Date().toISOString() } : b));
+    // This is a quick update, let's also add a history entry for it
+    const bookmarkToUpdate = bookmarks.find(b => b.id === id);
+    if (bookmarkToUpdate) {
+        addOrUpdateBookmark({ ...bookmarkToUpdate, chapter: newChapter >= 0 ? newChapter : 0 }, id);
+    }
   };
 
   const updateBookmarkStatus = (ids: string[], statusId: string) => {
     const now = new Date().toISOString();
-    setBookmarks(prev => prev.map(b => ids.includes(b.id) ? { ...b, statusId, lastUpdated: now } : b));
+    setBookmarks(prev => prev.map(b => {
+        if (ids.includes(b.id)) {
+            const { history, ...currentState } = b;
+            const newHistoryEntry: BookmarkHistory = { state: currentState, date: now };
+            const updatedHistory = [newHistoryEntry, ...(history || [])].slice(0, MAX_HISTORY);
+            return { ...b, statusId, lastUpdated: now, history: updatedHistory };
+        }
+        return b;
+    }));
   }
 
   const handleEdit = (bookmark: Bookmark) => {
@@ -209,11 +249,12 @@ export default function Home() {
                         bookmarks={bookmarks}
                         readingStatuses={readingStatuses}
                         onDelete={deleteBookmarks}
-                        onEditSubmit={addOrUpdateBookmark}
                         onToggleFavorite={toggleFavorite}
                         onUpdateChapter={updateChapter}
                         onUpdateStatus={updateBookmarkStatus}
                         allTags={allTags}
+                        onEditSubmit={addOrUpdateBookmark}
+                        onRevert={revertBookmark}
                     />
                     )}
                     {activeView === 'settings' && (
@@ -235,6 +276,7 @@ export default function Home() {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         onSubmit={addOrUpdateBookmark}
+        onRevert={revertBookmark}
         bookmark={editingBookmark}
         readingStatuses={readingStatuses}
       />

@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
-import { Edit, Star, Tag, Minus, Plus, BookOpen, StickyNote, X, List, Palette } from 'lucide-react';
+import { Edit, Star, Tag, Minus, Plus, BookOpen, StickyNote, X, List, Palette, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import type { Bookmark, ReadingStatus } from "@/types";
 import { Checkbox } from './ui/checkbox';
@@ -11,6 +11,10 @@ import { Badge } from './ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { Progress } from './ui/progress';
 import { useMemo, useRef } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { SwipeArea } from './SwipeArea';
+import { useToast } from '@/hooks/use-toast';
+
 
 interface BookmarkListItemProps {
   bookmark: Bookmark;
@@ -18,13 +22,17 @@ interface BookmarkListItemProps {
   onEdit: (bookmark: Bookmark) => void;
   onToggleFavorite: (id: string) => void;
   onUpdateChapter: (id: string, newChapter: number) => void;
+  onDelete: (ids: string[]) => void;
   isSelected: boolean;
   onSelectionChange: (id: string, isSelected: boolean) => void;
   isCompact: boolean;
 }
 
-export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, isSelected, onSelectionChange, isCompact }: BookmarkListItemProps) {
+export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, onDelete, isSelected, onSelectionChange, isCompact }: BookmarkListItemProps) {
   const lastUpdatedText = formatDistanceToNow(new Date(bookmark.lastUpdated), { addSuffix: true });
+  const isMobile = useIsMobile();
+  const { toast } = useToast();
+  
   const progress = useMemo(() => {
     if (bookmark.totalChapters && bookmark.totalChapters > 0) {
       return Math.round(((bookmark.chapter || 0) / bookmark.totalChapters) * 100);
@@ -48,11 +56,23 @@ export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFav
   const handlePointerLeave = () => {
       clearTimeout(longPressTimer.current);
   };
+  
+  const handleFavoriteSwipe = () => {
+      onToggleFavorite(bookmark.id);
+      toast({
+          title: bookmark.isFavorite ? "Removed from Favorites" : "Added to Favorites",
+          description: `"${bookmark.title}" updated.`,
+      });
+  };
 
-  return (
-    <div 
+  const handleDeleteSwipe = () => {
+      onDelete([bookmark.id]);
+  };
+
+  const listItemContent = (
+      <div 
         ref={itemRef}
-        className={`flex items-center gap-4 p-2 rounded-lg border transition-colors animate-fade-in ${isSelected ? 'bg-muted/80 border-primary' : 'bg-muted/30 hover:bg-muted/60'}`}
+        className={`flex items-center gap-4 p-2 rounded-lg border transition-colors w-full animate-fade-in ${isSelected ? 'bg-muted/80 border-primary' : 'bg-muted/30 hover:bg-muted/60'}`}
         onTouchStart={handlePointerDown}
         onTouchEnd={handlePointerUp}
         onMouseDown={handlePointerDown}
@@ -146,6 +166,16 @@ export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFav
                 <Edit className="w-4 h-4" />
             </Button>
         </div>
-    </div>
+      </div>
   );
+  
+  return isMobile ? (
+    <SwipeArea
+        onFavorite={handleFavoriteSwipe}
+        onDelete={handleDeleteSwipe}
+        isFavorite={bookmark.isFavorite}
+    >
+        {listItemContent}
+    </SwipeArea>
+  ) : listItemContent;
 }

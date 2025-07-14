@@ -5,6 +5,11 @@ export interface ReadingStatus {
   color: string; // hex color
 }
 
+export interface BookmarkHistory {
+  state: Omit<Bookmark, 'history'>;
+  date: string;
+}
+
 export interface Bookmark {
   id:string;
   title: string;
@@ -17,6 +22,7 @@ export interface Bookmark {
   totalChapters?: number;
   statusId: string; // Corresponds to ReadingStatus.id
   notes?: string;
+  history?: BookmarkHistory[];
 }
 
 export type SortOrder = 'lastUpdatedDesc' | 'lastUpdatedAsc' | 'titleAsc' | 'titleDesc' | 'chapterDesc' | 'chapterAsc';

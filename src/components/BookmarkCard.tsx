@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Edit, Star, Tag, Minus, Plus, BookOpen, StickyNote, X, List } from 'lucide-react';
+import { Edit, Star, Tag, Minus, Plus, Trash2, BookOpen, StickyNote, X, List } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -17,6 +17,9 @@ import { Checkbox } from './ui/checkbox';
 import { Badge } from './ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { Progress } from './ui/progress';
+import { SwipeArea } from './SwipeArea';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useToast } from '@/hooks/use-toast';
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -24,15 +27,18 @@ interface BookmarkCardProps {
   onEdit: (bookmark: Bookmark) => void;
   onToggleFavorite: (id: string) => void;
   onUpdateChapter: (id: string, newChapter: number) => void;
+  onDelete: (ids: string[]) => void;
   isSelected: boolean;
   onSelectionChange: (id: string, isSelected: boolean) => void;
   isCompact: boolean;
 }
 
-export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, isSelected, onSelectionChange, isCompact }: BookmarkCardProps) {
+export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, onDelete, isSelected, onSelectionChange, isCompact }: BookmarkCardProps) {
     const [lastUpdatedText, setLastUpdatedText] = useState('');
     const cardRef = useRef<HTMLDivElement>(null);
     const longPressTimer = useRef<NodeJS.Timeout>();
+    const isMobile = useIsMobile();
+    const { toast } = useToast();
 
     useEffect(() => {
         const updateText = () => {
@@ -76,10 +82,22 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
         clearTimeout(longPressTimer.current);
     };
 
-  return (
+    const handleFavoriteSwipe = () => {
+        onToggleFavorite(bookmark.id);
+        toast({
+            title: bookmark.isFavorite ? "Removed from Favorites" : "Added to Favorites",
+            description: `"${bookmark.title}" updated.`,
+        });
+    };
+
+    const handleDeleteSwipe = () => {
+        onDelete([bookmark.id]);
+    };
+
+  const cardContent = (
     <Card 
         ref={cardRef}
-        className={`flex flex-col bg-background/30 backdrop-blur-lg border shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1 ${isSelected ? 'border-primary shadow-primary/30' : 'border-white/20'} animate-fade-in`}
+        className={`flex flex-col bg-background/30 backdrop-blur-lg border shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1 w-full ${isSelected ? 'border-primary shadow-primary/30' : 'border-white/20'} animate-fade-in`}
         onTouchStart={handlePointerDown}
         onTouchEnd={handlePointerUp}
         onMouseDown={handlePointerDown}
@@ -187,4 +205,14 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
       </CardContent>
     </Card>
   );
+  
+  return isMobile ? (
+    <SwipeArea
+        onFavorite={handleFavoriteSwipe}
+        onDelete={handleDeleteSwipe}
+        isFavorite={bookmark.isFavorite}
+    >
+        {cardContent}
+    </SwipeArea>
+  ) : cardContent;
 }
