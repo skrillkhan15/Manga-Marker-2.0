@@ -109,6 +109,8 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
 
   useEffect(() => {
     if (urlValue) {
+      // Regex to find numbers after common chapter indicators.
+      // Supports "chapter-123", "chapter_123", "ch-123", "/123", etc.
       const match = urlValue.match(/(?:[/-]|chapter(?:-|_))(\d+(?:\.\d+)?)(?=[/?#]|$)/i);
       if (match && match[1]) {
         const chapterNumber = parseFloat(match[1]);
@@ -323,5 +325,5 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
         </Form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
