@@ -7,7 +7,6 @@ import { Edit, Star, Tag, Minus, Plus, BookOpen, StickyNote, X, List } from 'luc
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
