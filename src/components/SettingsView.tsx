@@ -4,7 +4,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import type { Bookmark, ReadingStatus, BackupData, ThemeName, SortPreset, AuthProps } from "@/types";
+import type { Bookmark, ReadingStatus, BackupData, ThemeName, SortPreset, AuthProps, Folder } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History, Lock, KeyRound, HelpCircle } from "lucide-react";
 import { format } from 'date-fns';
@@ -31,6 +31,8 @@ interface SettingsViewProps {
     onRenameTag: (oldName: string, newName: string) => void;
     onDeleteTag: (tagName: string) => void;
     auth: AuthProps;
+    folders: Folder[];
+    setFolders: (folders: Folder[] | ((prev: Folder[]) => Folder[])) => void;
 }
 
 const themes: { name: ThemeName, label: string, icon: React.FC<any> }[] = [
@@ -52,7 +54,9 @@ export default function SettingsView({
     allTags, 
     onRenameTag, 
     onDeleteTag,
-    auth
+    auth,
+    folders,
+    setFolders
 }: SettingsViewProps) {
     const { toast } = useToast();
     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -131,7 +135,8 @@ export default function SettingsView({
         const dataToExport: BackupData = {
             bookmarks,
             readingStatuses,
-            sortPresets
+            sortPresets,
+            folders
         };
         let jsonString = JSON.stringify(dataToExport, null, 2);
 
@@ -227,12 +232,13 @@ export default function SettingsView({
     const parseAndLoadData = (jsonData: string) => {
         const importedData = JSON.parse(jsonData);
         
-        const { bookmarks, readingStatuses, sortPresets } = importedData;
+        const { bookmarks, readingStatuses, sortPresets, folders } = importedData;
 
         if (Array.isArray(bookmarks) && Array.isArray(readingStatuses)) {
             setBookmarks(bookmarks);
             setReadingStatuses(readingStatuses);
             setSortPresets(sortPresets || []); // Handle presets, even if they don't exist in old backups
+            setFolders(folders || []); // Handle folders
             toast({ title: "Import Successful", description: "Your data has been loaded." });
         } else {
             throw new Error("Invalid backup file format.");
@@ -252,6 +258,7 @@ export default function SettingsView({
                 setBookmarks(backupData.bookmarks);
                 setReadingStatuses(backupData.readingStatuses);
                 setSortPresets(backupData.sortPresets || []);
+                setFolders(backupData.folders || []);
                 toast({ title: "Auto-Backup Restored", description: "Your data has been restored from the latest automatic backup." });
             } catch (error) {
                 toast({ title: "Restore Failed", description: "The automatic backup data seems to be corrupted.", variant: "destructive" });
@@ -698,7 +705,7 @@ export default function SettingsView({
                         <AccordionItem value="item-2">
                             <AccordionTrigger>How do I edit multiple bookmarks?</AccordionTrigger>
                             <AccordionContent>
-                                On desktop, you can use the checkboxes to select multiple bookmarks. On mobile, you can long-press a bookmark to enter selection mode. Once you have items selected, a new toolbar will appear at the top of the list allowing you to delete the selected bookmarks or update their status all at once.
+                                On desktop, you can use the checkboxes to select multiple bookmarks. On mobile, you can long-press a bookmark to enter selection mode. Once you have items selected, a new toolbar will appear at the top of the list allowing you to delete, move to a folder, or update the status of the selected bookmarks all at once.
                             </AccordionContent>
                         </AccordionItem>
                         <AccordionItem value="item-3">
@@ -717,6 +724,12 @@ export default function SettingsView({
                             <AccordionTrigger>What is the Bookmark History feature?</AccordionTrigger>
                             <AccordionContent>
                                 Every time you save a change to a bookmark, the app saves a snapshot of its previous state. In the "History" tab of the edit form, you can view these previous versions and revert the bookmark back to an older state if you made a mistake.
+                            </AccordionContent>
+                        </AccordionItem>
+                         <AccordionItem value="item-6">
+                            <AccordionTrigger>What are folders?</AccordionTrigger>
+                            <AccordionContent>
+                                Folders are a way to manually group your bookmarks into collections, like a bookshelf. You can create, rename, and delete folders from the sidebar. A bookmark can only be in one folder at a time. This is different from tags, where a bookmark can have multiple tags.
                             </AccordionContent>
                         </AccordionItem>
                     </Accordion>

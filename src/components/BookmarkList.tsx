@@ -1,10 +1,10 @@
 
 "use client";
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Bookmark, SortOrder, ViewLayout, ReadingStatus, BookmarkHistory, SortPreset } from "@/types";
+import type { Bookmark, SortOrder, ViewLayout, ReadingStatus, BookmarkHistory, SortPreset, Folder } from "@/types";
 import BookmarkCard from "./BookmarkCard";
 import BookmarkListItem from './BookmarkListItem';
-import { BookOpenCheck, SearchX, Trash2, CheckCircle2, ChevronDown, Filter, LayoutGrid, List, Star, Tags, Book, ChevronsUpDown, Rows, Save, Settings2, X, PlusCircle } from "lucide-react";
+import { BookOpenCheck, SearchX, Trash2, CheckCircle2, ChevronDown, Filter, LayoutGrid, List, Star, Tags, Book, ChevronsUpDown, Rows, Save, Settings2, X, PlusCircle, Folder as FolderIcon, Move } from "lucide-react";
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Button } from './ui/button';
@@ -27,6 +27,7 @@ interface BookmarkListProps {
   readingStatuses: ReadingStatus[];
   sortPresets: SortPreset[];
   setSortPresets: React.Dispatch<React.SetStateAction<SortPreset[]>>;
+  folders: Folder[];
   onDelete: (ids: string[]) => void;
   onToggleFavorite: (id: string) => void;
   onUpdateChapter: (id: string, newChapter: number) => void;
@@ -34,6 +35,9 @@ interface BookmarkListProps {
   allTags: string[];
   onEditSubmit: (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'history'>, id?: string) => void;
   onRevert: (bookmarkId: string, historyEntry: BookmarkHistory) => void;
+  onMoveToFolder: (ids: string[], folderId: string | null) => void;
+  activeFolder?: Folder;
+  onClearFolderFilter: () => void;
 }
 
 export default function BookmarkList({ 
@@ -41,13 +45,17 @@ export default function BookmarkList({
     readingStatuses, 
     sortPresets,
     setSortPresets,
+    folders,
     onDelete, 
     onToggleFavorite, 
     onUpdateChapter, 
     onUpdateStatus, 
     allTags, 
     onEditSubmit, 
-    onRevert 
+    onRevert,
+    onMoveToFolder,
+    activeFolder,
+    onClearFolderFilter
 }: BookmarkListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("lastUpdatedDesc");
@@ -64,6 +72,12 @@ export default function BookmarkList({
   const [presetName, setPresetName] = useState('');
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    // When the active folder changes, clear selections and search term
+    setSelectedBookmarks([]);
+    setSearchTerm('');
+  }, [activeFolder]);
 
   const handleEdit = (bookmark: Bookmark) => {
     setEditingBookmark(bookmark);
@@ -167,6 +181,11 @@ export default function BookmarkList({
     setSelectedBookmarks([]);
   };
 
+  const handleMoveToFolder = (folderId: string | null) => {
+    onMoveToFolder(selectedBookmarks, folderId);
+    setSelectedBookmarks([]);
+  };
+
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedTags([]);
@@ -219,6 +238,15 @@ export default function BookmarkList({
 
   return (
     <div className="space-y-6">
+      {activeFolder && (
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
+            <FolderIcon className="w-6 h-6 text-primary" />
+            <h2 className="text-xl font-bold">{activeFolder.name}</h2>
+            <Button variant="ghost" size="icon" className="h-7 w-7 ml-auto" onClick={onClearFolderFilter}>
+                <X className="w-4 h-4" />
+            </Button>
+        </div>
+      )}
        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
             <Input
                 type="search"
@@ -452,6 +480,28 @@ export default function BookmarkList({
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete
                 </Button>
+                
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="secondary" size="sm">
+                            <Move className="mr-2 h-4 w-4" />
+                            Move to Folder
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem onSelect={() => handleMoveToFolder(null)}>
+                            <X className="mr-2 h-4 w-4" />
+                            Remove from Folder
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {folders.map(folder => (
+                            <DropdownMenuItem key={folder.id} onSelect={() => handleMoveToFolder(folder.id)}>
+                                <FolderIcon className="mr-2 h-4 w-4" />
+                                {folder.name}
+                            </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -483,9 +533,9 @@ export default function BookmarkList({
              </>
           ) : (
             <>
-                <BookOpenCheck className="w-16 h-16 text-muted-foreground mb-4" />
-                <h2 className="text-xl font-semibold">No Bookmarks Yet</h2>
-                <p className="text-muted-foreground">Add a manga or manhwa to get started!</p>
+                <FolderIcon className="w-16 h-16 text-muted-foreground mb-4" />
+                <h2 className="text-xl font-semibold">{ activeFolder ? `Folder "${activeFolder.name}" is empty` : 'No Bookmarks Yet' }</h2>
+                <p className="text-muted-foreground">{ activeFolder ? 'Add some bookmarks to this folder.' : 'Add a manga or manhwa to get started!' }</p>
             </>
           )}
         </div>
@@ -532,6 +582,7 @@ export default function BookmarkList({
             onRevert={handleRevert}
             bookmark={editingBookmark}
             readingStatuses={readingStatuses}
+            folders={folders}
           />
       ) : (
         <BookmarkDialog
@@ -541,6 +592,7 @@ export default function BookmarkList({
             onRevert={handleRevert}
             bookmark={editingBookmark}
             readingStatuses={readingStatuses}
+            folders={folders}
         />
       )}
 

@@ -1,5 +1,9 @@
 
 
+export interface Folder {
+  id: string;
+  name: string;
+}
 
 export interface ReadingStatus {
   id: string;
@@ -25,6 +29,7 @@ export interface Bookmark {
   statusId: string; // Corresponds to ReadingStatus.id
   notes?: string;
   history?: BookmarkHistory[];
+  folderId?: string;
 }
 
 export type SortOrder = 'lastUpdatedDesc' | 'lastUpdatedAsc' | 'titleAsc' | 'titleDesc' | 'chapterDesc' | 'chapterAsc';
@@ -51,6 +56,7 @@ export interface BackupData {
   bookmarks: Bookmark[];
   readingStatuses: ReadingStatus[];
   sortPresets?: SortPreset[];
+  folders?: Folder[];
 }
 
 export type ThemeName = 'system' | 'light' | 'dark' | 'mint' | 'sunset' | 'ocean';

@@ -29,7 +29,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import type { Bookmark, BookmarkHistory, ReadingStatus } from "@/types";
+import type { Bookmark, BookmarkHistory, ReadingStatus, Folder } from "@/types";
 import { Badge } from "./ui/badge";
 import { X, Upload, History, RotateCcw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -45,6 +45,7 @@ const formSchema = z.object({
   coverImage: z.string().optional(),
   statusId: z.string({ required_error: "Please select a status." }),
   notes: z.string().optional(),
+  folderId: z.string().optional(),
 });
 
 type BookmarkFormValues = z.infer<typeof formSchema>;
@@ -56,9 +57,10 @@ interface BookmarkSheetProps {
     onRevert: (bookmarkId: string, historyEntry: BookmarkHistory) => void;
     bookmark: Bookmark | null;
     readingStatuses: ReadingStatus[];
+    folders: Folder[];
 }
 
-export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark, readingStatuses }: BookmarkSheetProps) {
+export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark, readingStatuses, folders }: BookmarkSheetProps) {
   const [tagInput, setTagInput] = useState('');
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -74,6 +76,7 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
       coverImage: "",
       statusId: readingStatuses[0]?.id || "plan-to-read",
       notes: "",
+      folderId: "",
     },
   });
   
@@ -89,6 +92,7 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
           coverImage: bookmark.coverImage || "",
           statusId: bookmark.statusId || readingStatuses[0]?.id,
           notes: bookmark.notes || "",
+          folderId: bookmark.folderId || "",
         });
         setCoverPreview(bookmark.coverImage || null);
       } else {
@@ -101,6 +105,7 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
           coverImage: "",
           statusId: readingStatuses.find(s => s.id === 'plan-to-read')?.id || readingStatuses[0]?.id,
           notes: "",
+          folderId: "",
         });
         setCoverPreview(null);
       }
@@ -122,7 +127,11 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
   }, [urlValue, form]);
 
   const handleFormSubmit = (values: BookmarkFormValues) => {
-    onSubmit(values, bookmark?.id);
+    const dataToSubmit = {
+      ...values,
+      folderId: values.folderId || undefined,
+    };
+    onSubmit(dataToSubmit, bookmark?.id);
     onOpenChange(false);
     form.reset();
     setCoverPreview(null);
@@ -272,22 +281,48 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
                             )}
                         />
                     </div>
-                    <FormField
+                     <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                                control={form.control}
+                                name="statusId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Status</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a status" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {readingStatuses.map(status => (
+                                                    <SelectItem key={status.id} value={status.id}>
+                                                        {status.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        <FormField
                             control={form.control}
-                            name="statusId"
+                            name="folderId"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Status</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormLabel>Folder</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value || ''}>
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select a status" />
+                                                <SelectValue placeholder="No folder" />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {readingStatuses.map(status => (
-                                                <SelectItem key={status.id} value={status.id}>
-                                                    {status.label}
+                                            <SelectItem value="">No folder</SelectItem>
+                                            {folders.map(folder => (
+                                                <SelectItem key={folder.id} value={folder.id}>
+                                                    {folder.name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -296,6 +331,7 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
                                 </FormItem>
                             )}
                         />
+                    </div>
                     <FormField
                     control={form.control}
                     name="tags"

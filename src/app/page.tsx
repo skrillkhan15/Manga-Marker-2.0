@@ -3,10 +3,10 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import type { Bookmark, View, ReadingStatus, BackupData, BookmarkHistory, SortPreset } from "@/types";
-import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarTrigger, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
+import type { Bookmark, View, ReadingStatus, BackupData, BookmarkHistory, SortPreset, Folder } from "@/types";
+import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarTrigger, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarSeparator, SidebarGroup, SidebarGroupLabel, SidebarGroupContent } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { BookMarked, LayoutDashboard, List, Loader2, Settings } from 'lucide-react';
+import { BookMarked, LayoutDashboard, List, Loader2, Settings, Folder as FolderIcon, Plus, Edit2, Trash2, X, MoreVertical, FolderPlus } from 'lucide-react';
 import BookmarkList from '@/components/BookmarkList';
 import Dashboard from '@/components/Dashboard';
 import SettingsView from '@/components/SettingsView';
@@ -16,6 +16,9 @@ import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 import { useAuthLock } from '@/hooks/use-auth-lock';
 import LockScreen from '@/components/LockScreen';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const defaultStatuses: ReadingStatus[] = [
     { id: 'reading', label: 'Reading', color: '#3b82f6' },
@@ -31,7 +34,9 @@ export default function Home() {
   const [bookmarks, setBookmarks] = useLocalStorage<Bookmark[]>("manga-bookmarks", []);
   const [readingStatuses, setReadingStatuses] = useLocalStorage<ReadingStatus[]>("manga-statuses", defaultStatuses);
   const [sortPresets, setSortPresets] = useLocalStorage<SortPreset[]>("manga-presets", []);
+  const [folders, setFolders] = useLocalStorage<Folder[]>("manga-folders", []);
   const [activeView, setActiveView] = useState<View>('dashboard');
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -57,14 +62,35 @@ export default function Home() {
     const threeDays = 3 * 24 * 60 * 60 * 1000;
     if (!lastBackup || (now - parseInt(lastBackup, 10)) > threeDays) {
       if (bookmarks.length > 0) {
-        const backupData: BackupData = { bookmarks, readingStatuses, sortPresets };
+        const backupData: BackupData = { bookmarks, readingStatuses, sortPresets, folders };
         localStorage.setItem('mangamarks-autobackup', JSON.stringify(backupData));
         localStorage.setItem('mangamarks-autobackup-timestamp', now.toString());
         console.log('MangaMarks: Performed automatic backup.');
       }
     }
-  }, [bookmarks, readingStatuses, sortPresets]);
+  }, [bookmarks, readingStatuses, sortPresets, folders]);
 
+  const addFolder = (name: string) => {
+    const newFolder: Folder = { id: Date.now().toString(), name };
+    setFolders(prev => [...prev, newFolder]);
+    toast({ title: "Folder Created", description: `"${name}" has been added.` });
+  };
+
+  const renameFolder = (id: string, newName: string) => {
+    setFolders(prev => prev.map(f => f.id === id ? { ...f, name: newName } : f));
+    toast({ title: "Folder Renamed" });
+  };
+
+  const deleteFolder = (id: string) => {
+    // Unassign bookmarks from the folder being deleted
+    setBookmarks(prev => prev.map(b => b.folderId === id ? { ...b, folderId: undefined } : b));
+    // Delete the folder
+    setFolders(prev => prev.filter(f => f.id !== id));
+    if (selectedFolderId === id) {
+      setSelectedFolderId(null);
+    }
+    toast({ title: "Folder Deleted" });
+  };
 
   const addOrUpdateBookmark = (bookmark: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'history'>, id?: string) => {
     setBookmarks(prev => {
@@ -161,6 +187,16 @@ export default function Home() {
     }));
   }
 
+  const moveBookmarksToFolder = (ids: string[], folderId: string | null) => {
+    const now = new Date().toISOString();
+    setBookmarks(prev => prev.map(b => {
+        if (ids.includes(b.id)) {
+            return { ...b, folderId: folderId ?? undefined, lastUpdated: now };
+        }
+        return b;
+    }));
+  };
+
   const handleEdit = (bookmark: Bookmark) => {
     setEditingBookmark(bookmark);
     setDialogOpen(true);
@@ -209,6 +245,123 @@ export default function Home() {
     );
   };
 
+  const FolderList = () => {
+    const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+    const [folderName, setFolderName] = useState('');
+    const [isAdding, setIsAdding] = useState(false);
+
+    const handleStartAdd = () => {
+      setIsAdding(true);
+      setFolderName('');
+    };
+
+    const handleStartEdit = (folder: Folder) => {
+      setEditingFolderId(folder.id);
+      setFolderName(folder.name);
+    };
+
+    const handleCancel = () => {
+      setEditingFolderId(null);
+      setIsAdding(false);
+      setFolderName('');
+    };
+
+    const handleSave = () => {
+      if (!folderName.trim()) return;
+      if (editingFolderId) {
+        renameFolder(editingFolderId, folderName);
+      } else if (isAdding) {
+        addFolder(folderName);
+      }
+      handleCancel();
+    };
+
+    return (
+      <SidebarGroup>
+        <SidebarGroupLabel>Folders</SidebarGroupLabel>
+        <SidebarGroupAction asChild>
+          <Button variant="ghost" size="icon" className="w-6 h-6" onClick={handleStartAdd}>
+            <FolderPlus className="w-4 h-4" />
+          </Button>
+        </SidebarGroupAction>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {folders.map(folder =>
+              editingFolderId === folder.id ? (
+                <div key={folder.id} className="flex items-center gap-1 p-1">
+                  <Input value={folderName} onChange={e => setFolderName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSave()} className="h-7" autoFocus />
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleSave}><Check className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCancel}><X className="w-4 h-4" /></Button>
+                </div>
+              ) : (
+                <SidebarMenuItem key={folder.id}>
+                  <SidebarMenuButton
+                    onClick={() => {
+                        setSelectedFolderId(folder.id);
+                        setActiveView('list');
+                    }}
+                    isActive={activeView === 'list' && selectedFolderId === folder.id}
+                    tooltip={folder.name}
+                    size="sm"
+                  >
+                    <FolderIcon />
+                    <span>{folder.name}</span>
+                  </SidebarMenuButton>
+                   <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="absolute right-1 top-1 h-6 w-6 opacity-50 hover:opacity-100">
+                           <MoreVertical className="w-4 h-4"/>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onSelect={() => handleStartEdit(folder)}>
+                           <Edit2 className="mr-2 h-4 w-4"/> Rename
+                        </DropdownMenuItem>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4"/> Delete
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Folder?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to delete the folder "{folder.name}"? Bookmarks within it will not be deleted.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => deleteFolder(folder.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                      </DropdownMenuContent>
+                   </DropdownMenu>
+                </SidebarMenuItem>
+              )
+            )}
+            {isAdding && (
+              <div className="flex items-center gap-1 p-1">
+                <Input placeholder="New folder name" value={folderName} onChange={e => setFolderName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSave()} className="h-7" autoFocus />
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleSave}><Check className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCancel}><X className="w-4 h-4" /></Button>
+              </div>
+            )}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    );
+  };
+
+  const bookmarksInView = useMemo(() => {
+    if (activeView !== 'list') return bookmarks;
+    if (selectedFolderId) {
+      return bookmarks.filter(b => b.folderId === selectedFolderId);
+    }
+    return bookmarks;
+  }, [bookmarks, activeView, selectedFolderId]);
+
   if (!isMounted) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -241,7 +394,13 @@ export default function Home() {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => setActiveView('list')} isActive={activeView === 'list'} tooltip="All Bookmarks">
+              <SidebarMenuButton 
+                onClick={() => {
+                    setSelectedFolderId(null);
+                    setActiveView('list');
+                }} 
+                isActive={activeView === 'list' && !selectedFolderId} 
+                tooltip="All Bookmarks">
                 <List />
                 <span className="group-data-[collapsible=icon]:hidden">All Bookmarks</span>
               </SidebarMenuButton>
@@ -253,6 +412,8 @@ export default function Home() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
+          <SidebarSeparator />
+          <FolderList />
         </SidebarContent>
       </Sidebar>
       <SidebarInset>
@@ -268,7 +429,7 @@ export default function Home() {
                 {activeView === 'dashboard' && <Dashboard bookmarks={bookmarks} readingStatuses={readingStatuses} />}
                 {activeView === 'list' && (
                 <BookmarkList 
-                    bookmarks={bookmarks}
+                    bookmarks={bookmarksInView}
                     readingStatuses={readingStatuses}
                     sortPresets={sortPresets}
                     setSortPresets={setSortPresets}
@@ -279,6 +440,10 @@ export default function Home() {
                     allTags={allTags}
                     onEditSubmit={addOrUpdateBookmark}
                     onRevert={revertBookmark}
+                    folders={folders}
+                    onMoveToFolder={moveBookmarksToFolder}
+                    activeFolder={selectedFolderId ? folders.find(f => f.id === selectedFolderId) : undefined}
+                    onClearFolderFilter={() => setSelectedFolderId(null)}
                 />
                 )}
                 {activeView === 'settings' && (
@@ -293,6 +458,8 @@ export default function Home() {
                     onRenameTag={renameTag}
                     onDeleteTag={deleteTag}
                     auth={{ isLockEnabled, setIsLockEnabled, changePin, isPinSet, checkPin, resetApp }}
+                    folders={folders}
+                    setFolders={setFolders}
                   />
                 )}
             </>
@@ -305,6 +472,7 @@ export default function Home() {
         onRevert={revertBookmark}
         bookmark={editingBookmark}
         readingStatuses={readingStatuses}
+        folders={folders}
       />
     </SidebarProvider>
   );

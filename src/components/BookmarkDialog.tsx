@@ -30,7 +30,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import type { Bookmark, ReadingStatus, BookmarkHistory } from "@/types";
+import type { Bookmark, ReadingStatus, BookmarkHistory, Folder } from "@/types";
 import { Badge } from "./ui/badge";
 import { X, Upload, Sparkles, Loader2, History, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +47,7 @@ const formSchema = z.object({
   coverImage: z.string().optional(),
   statusId: z.string({ required_error: "Please select a status." }),
   notes: z.string().optional(),
+  folderId: z.string().optional(),
 });
 
 type BookmarkFormValues = z.infer<typeof formSchema>;
@@ -58,9 +59,10 @@ interface BookmarkDialogProps {
     onRevert: (bookmarkId: string, historyEntry: BookmarkHistory) => void;
     bookmark: Bookmark | null;
     readingStatuses: ReadingStatus[];
+    folders: Folder[];
 }
 
-export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmark, readingStatuses }: BookmarkDialogProps) {
+export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmark, readingStatuses, folders }: BookmarkDialogProps) {
   const [tagInput, setTagInput] = useState('');
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState(false);
@@ -78,6 +80,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
       coverImage: "",
       statusId: readingStatuses[0]?.id || "plan-to-read",
       notes: "",
+      folderId: "",
     },
   });
   
@@ -93,6 +96,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
           coverImage: bookmark.coverImage || "",
           statusId: bookmark.statusId || readingStatuses[0]?.id,
           notes: bookmark.notes || "",
+          folderId: bookmark.folderId || "",
         });
         setCoverPreview(bookmark.coverImage || null);
       } else {
@@ -105,6 +109,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
           coverImage: "",
           statusId: readingStatuses.find(s => s.id === 'plan-to-read')?.id || readingStatuses[0]?.id,
           notes: "",
+          folderId: "",
         });
         setCoverPreview(null);
       }
@@ -158,7 +163,11 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
   };
 
   const handleFormSubmit = (values: BookmarkFormValues) => {
-    onSubmit(values, bookmark?.id);
+    const dataToSubmit = {
+      ...values,
+      folderId: values.folderId || undefined, // Ensure empty string becomes undefined
+    };
+    onSubmit(dataToSubmit, bookmark?.id);
     onOpenChange(false);
     form.reset();
     setCoverPreview(null);
@@ -313,7 +322,8 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
                         )}
                     />
                  </div>
-                 <FormField
+                 <div className="grid grid-cols-2 gap-4">
+                    <FormField
                         control={form.control}
                         name="statusId"
                         render={({ field }) => (
@@ -337,6 +347,32 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
                             </FormItem>
                         )}
                     />
+                    <FormField
+                        control={form.control}
+                        name="folderId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Folder</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || ''}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="No folder" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="">No folder</SelectItem>
+                                        {folders.map(folder => (
+                                            <SelectItem key={folder.id} value={folder.id}>
+                                                {folder.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                 </div>
                 <FormField
                   control={form.control}
                   name="tags"
