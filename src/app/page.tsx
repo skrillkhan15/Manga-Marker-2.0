@@ -117,6 +117,30 @@ export default function Home() {
     return Array.from(tags).sort();
   }, [bookmarks]);
 
+  const renameTag = (oldName: string, newName: string) => {
+    if (!newName || oldName === newName) return;
+    setBookmarks(prev => 
+      prev.map(bookmark => {
+        if (bookmark.tags?.includes(oldName)) {
+          // Filter out the old tag, add the new one, and remove duplicates
+          const newTags = Array.from(new Set([...(bookmark.tags.filter(t => t !== oldName)), newName]));
+          return { ...bookmark, tags: newTags };
+        }
+        return bookmark;
+      })
+    );
+  };
+
+  const deleteTag = (tagName: string) => {
+    setBookmarks(prev => 
+      prev.map(bookmark => {
+        if (bookmark.tags?.includes(tagName)) {
+          return { ...bookmark, tags: bookmark.tags.filter(t => t !== tagName) };
+        }
+        return bookmark;
+      })
+    );
+  };
 
   return (
     <SidebarProvider>
@@ -180,7 +204,17 @@ export default function Home() {
                         allTags={allTags}
                     />
                     )}
-                    {activeView === 'settings' && <SettingsView bookmarks={bookmarks} setBookmarks={setBookmarks} readingStatuses={readingStatuses} setReadingStatuses={setReadingStatuses}/>}
+                    {activeView === 'settings' && (
+                      <SettingsView 
+                        bookmarks={bookmarks} 
+                        setBookmarks={setBookmarks} 
+                        readingStatuses={readingStatuses} 
+                        setReadingStatuses={setReadingStatuses}
+                        allTags={allTags}
+                        onRenameTag={renameTag}
+                        onDeleteTag={deleteTag}
+                      />
+                    )}
                 </>
             )}
         </main>

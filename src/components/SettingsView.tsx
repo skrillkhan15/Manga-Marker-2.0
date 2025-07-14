@@ -1,31 +1,51 @@
 
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { Bookmark, ReadingStatus } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
-import { Download, Upload, Trash2, Edit, Check, X, Plus } from "lucide-react";
+import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag } from "lucide-react";
 import { format } from 'date-fns';
 import { Input } from './ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { ColorPicker } from './ColorPicker';
+import { Badge } from './ui/badge';
 
 interface SettingsViewProps {
     bookmarks: Bookmark[];
     setBookmarks: (bookmarks: Bookmark[] | ((prev: Bookmark[]) => Bookmark[])) => void;
     readingStatuses: ReadingStatus[];
     setReadingStatuses: (statuses: ReadingStatus[] | ((prev: ReadingStatus[]) => ReadingStatus[])) => void;
+    allTags: string[];
+    onRenameTag: (oldName: string, newName: string) => void;
+    onDeleteTag: (tagName: string) => void;
 }
 
-export default function SettingsView({ bookmarks, setBookmarks, readingStatuses, setReadingStatuses }: SettingsViewProps) {
+export default function SettingsView({ bookmarks, setBookmarks, readingStatuses, setReadingStatuses, allTags, onRenameTag, onDeleteTag }: SettingsViewProps) {
     const { toast } = useToast();
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [editingStatus, setEditingStatus] = useState<ReadingStatus | null>(null);
     const [newStatusLabel, setNewStatusLabel] = useState('');
     const [newStatusColor, setNewStatusColor] = useState('#888888');
+    const [editingTag, setEditingTag] = useState<{ oldName: string; newName: string } | null>(null);
+
+    const tagCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const tag of allTags) {
+            counts[tag] = 0;
+        }
+        for (const bookmark of bookmarks) {
+            bookmark.tags?.forEach(tag => {
+                if (counts[tag] !== undefined) {
+                    counts[tag]++;
+                }
+            });
+        }
+        return counts;
+    }, [bookmarks, allTags]);
 
     const handleExport = () => {
         if (bookmarks.length === 0) {
@@ -107,18 +127,34 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
     };
 
     const handleDeleteStatus = (statusId: string) => {
-        const statusToDelete = readingStatuses.find(s => s.id === statusId);
-        if (statusToDelete && statusToDelete.id.startsWith("default-")) {
-            toast({ title: "Cannot Delete", description: "Default statuses cannot be deleted.", variant: "destructive" });
-            return;
-        }
-        
         const bookmarksWithStatus = bookmarks.some(b => b.statusId === statusId);
         if (bookmarksWithStatus) {
-            toast({ title: "Cannot Delete", description: "This status is currently in use by one or more bookmarks.", variant: "destructive" });
+            toast({ title: "Cannot Delete", description: "This status is in use by one or more bookmarks. Reassign them before deleting.", variant: "destructive" });
             return;
         }
         setReadingStatuses(prev => prev.filter(s => s.id !== statusId));
+    };
+
+    const handleRenameTag = () => {
+        if (!editingTag) return;
+        const { oldName, newName } = editingTag;
+        if (!newName.trim()) {
+             toast({ title: "Invalid Name", description: "Tag name cannot be empty.", variant: "destructive" });
+             return;
+        }
+        if (allTags.includes(newName.trim()) && newName.trim() !== oldName) {
+            // This is a merge operation
+            const existingCount = tagCounts[newName.trim()];
+            toast({ title: "Tags Merged", description: `Tag "${oldName}" was merged into "${newName}". ${existingCount + tagCounts[oldName]} bookmarks now have this tag.` });
+        } else if (newName.trim() !== oldName) {
+            toast({ title: "Tag Renamed", description: `Tag "${oldName}" was successfully renamed to "${newName}".`});
+        }
+        onRenameTag(oldName, newName.trim());
+        setEditingTag(null);
+    };
+
+    const startEditingTag = (tagName: string) => {
+        setEditingTag({ oldName: tagName, newName: tagName });
     };
 
     return (
@@ -165,6 +201,7 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
                                         <Input
                                             value={editingStatus.label}
                                             onChange={(e) => setEditingStatus(s => s ? {...s, label: e.target.value} : null)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleUpdateStatus()}
                                             className="h-8"
                                         />
                                         <Button size="icon" className="h-8 w-8" onClick={handleUpdateStatus}><Check className="w-4 h-4" /></Button>
@@ -179,7 +216,7 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
                                         </Button>
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:text-destructive">
+                                                <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:text-destructive" disabled={bookmarks.some(b => b.statusId === status.id)}>
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
                                             </AlertDialogTrigger>
@@ -217,12 +254,69 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
                             placeholder="New status label..."
                             value={newStatusLabel}
                             onChange={(e) => setNewStatusLabel(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddNewStatus()}
                             className="h-8"
                         />
                         <Button size="icon" className="h-8 w-8" onClick={handleAddNewStatus} disabled={!newStatusLabel.trim()}>
                             <Plus className="w-4 h-4" />
                         </Button>
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Manage Tags</CardTitle>
+                    <CardDescription>Rename, merge, or delete tags across all your bookmarks.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    {allTags.length > 0 ? allTags.map(tag => (
+                       <div key={tag} className="flex items-center gap-2 p-2 border rounded-lg">
+                            {editingTag?.oldName === tag ? (
+                                <>
+                                    <Tag className="w-4 h-4 text-muted-foreground" />
+                                    <Input 
+                                        value={editingTag.newName}
+                                        onChange={(e) => setEditingTag(t => t ? {...t, newName: e.target.value} : null)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleRenameTag()}
+                                        className="h-8"
+                                    />
+                                    <Button size="icon" className="h-8 w-8" onClick={handleRenameTag}><Check className="w-4 h-4" /></Button>
+                                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingTag(null)}><X className="w-4 h-4" /></Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Tag className="w-4 h-4 text-muted-foreground" />
+                                    <span className="flex-1 font-medium">{tag}</span>
+                                    <Badge variant="secondary">{tagCounts[tag]}</Badge>
+                                    <Button variant="ghost" size="icon" onClick={() => startEditingTag(tag)} className="w-8 h-8">
+                                        <Edit className="w-4 h-4" />
+                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive hover:text-destructive">
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This will permanently remove the "{tag}" tag from all {tagCounts[tag]} bookmarks. This action cannot be undone.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => onDeleteTag(tag)}>Delete Tag</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </>
+                            )}
+                       </div>
+                    )) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No tags yet. Add tags to your bookmarks to manage them here.</p>
+                    )}
                 </CardContent>
             </Card>
         </div>
