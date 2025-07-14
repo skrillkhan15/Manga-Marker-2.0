@@ -33,9 +33,10 @@ export interface Bookmark {
   history?: BookmarkHistory[];
   folderId?: string;
   reminderDate?: string; // ISO string for the reminder
+  rating?: number; // 0-5 stars
 }
 
-export type SortOrder = 'lastUpdatedDesc' | 'lastUpdatedAsc' | 'titleAsc' | 'titleDesc' | 'chapterDesc' | 'chapterAsc';
+export type SortOrder = 'lastUpdatedDesc' | 'lastUpdatedAsc' | 'titleAsc' | 'titleDesc' | 'chapterDesc' | 'chapterAsc' | 'ratingDesc' | 'ratingAsc';
 
 export type View = 'dashboard' | 'list' | 'settings';
 

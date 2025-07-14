@@ -20,6 +20,7 @@ import { Progress } from './ui/progress';
 import { SwipeArea } from './SwipeArea';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
+import { StarRating } from './StarRating';
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -171,6 +172,7 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
             </div>
       </CardHeader>
       <CardContent className="flex-grow pb-4 px-6 space-y-3">
+        {(bookmark.rating ?? 0) > 0 && <StarRating rating={bookmark.rating || 0} />}
         {progress !== null && (
           <div>
             <div className="flex justify-between items-center text-xs text-muted-foreground mb-1">

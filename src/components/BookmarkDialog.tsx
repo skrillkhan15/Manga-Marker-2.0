@@ -38,6 +38,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ScrollArea } from "./ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
+import { StarRating } from "./StarRating";
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title cannot be empty." }),
@@ -51,6 +52,7 @@ const formSchema = z.object({
   notes: z.string().optional(),
   folderId: z.string().optional(),
   reminderDays: z.coerce.number().min(0).optional(),
+  rating: z.coerce.number().min(0).max(5).optional(),
 });
 
 type BookmarkFormValues = z.infer<typeof formSchema>;
@@ -86,6 +88,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
       notes: "",
       folderId: "",
       reminderDays: 0,
+      rating: 0,
     },
   });
   
@@ -104,6 +107,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
           notes: bookmark.notes || "",
           folderId: bookmark.folderId || "",
           reminderDays: 0, // Don't pre-fill reminder, it's a one-time action
+          rating: bookmark.rating || 0,
         });
         setCoverPreview(bookmark.coverImage || null);
       } else {
@@ -119,6 +123,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
           notes: "",
           folderId: "",
           reminderDays: 0,
+          rating: 0,
         });
         setCoverPreview(null);
       }
@@ -403,6 +408,19 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
                         )}
                     />
                  </div>
+                <FormField
+                  control={form.control}
+                  name="rating"
+                  render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Rating</FormLabel>
+                         <FormControl>
+                            <StarRating rating={field.value || 0} setRating={field.onChange} size={6} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="tags"

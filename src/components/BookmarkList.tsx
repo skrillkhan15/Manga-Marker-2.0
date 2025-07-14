@@ -21,6 +21,7 @@ import { BookmarkSheet } from './BookmarkSheet';
 import { BookmarkDialog } from './BookmarkDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { StarRating } from './StarRating';
 
 interface BookmarkListProps {
   bookmarks: Bookmark[];
@@ -63,6 +64,7 @@ export default function BookmarkList({
   const [selectedBookmarks, setSelectedBookmarks] = useState<string[]>([]);
   const [showFavorites, setShowFavorites] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [ratingFilter, setRatingFilter] = useState<number>(0);
   const [layout, setLayout] = useState<ViewLayout>('grid');
   const [isCompact, setIsCompact] = useState(false);
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
@@ -128,6 +130,10 @@ export default function BookmarkList({
         filtered = filtered.filter(b => b.statusId === statusFilter);
     }
 
+    if (ratingFilter > 0) {
+        filtered = filtered.filter(b => (b.rating || 0) === ratingFilter);
+    }
+
     if (searchTerm) {
         filtered = filtered.filter(bookmark =>
             bookmark.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -153,6 +159,10 @@ export default function BookmarkList({
           return (b.chapter || 0) - (a.chapter || 0);
         case "chapterAsc":
             return (a.chapter || 0) - (b.chapter || 0);
+        case "ratingDesc":
+            return (b.rating || 0) - (a.rating || 0);
+        case "ratingAsc":
+            return (a.rating || 0) - (b.rating || 0);
         case "lastUpdatedAsc":
           return new Date(a.lastUpdated).getTime() - new Date(b.lastUpdated).getTime();
         case "lastUpdatedDesc":
@@ -160,7 +170,7 @@ export default function BookmarkList({
           return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
       }
     });
-  }, [bookmarks, searchTerm, sortOrder, selectedTags, showFavorites, statusFilter]);
+  }, [bookmarks, searchTerm, sortOrder, selectedTags, showFavorites, statusFilter, ratingFilter]);
 
   const toggleSelectAll = () => {
     if (selectedBookmarks.length === filteredAndSortedBookmarks.length) {
@@ -191,6 +201,7 @@ export default function BookmarkList({
     setSelectedTags([]);
     setShowFavorites(false);
     setStatusFilter('all');
+    setRatingFilter(0);
   }
 
   const handleDelete = () => {
@@ -198,7 +209,7 @@ export default function BookmarkList({
     setSelectedBookmarks([]);
   }
 
-  const isAnyFilterActive = showFavorites || statusFilter !== 'all' || selectedTags.length > 0;
+  const isAnyFilterActive = showFavorites || statusFilter !== 'all' || selectedTags.length > 0 || ratingFilter > 0;
 
   const currentStatusFilterLabel = statusFilter !== 'all' ? statusesById[statusFilter]?.label : '';
 
@@ -270,6 +281,18 @@ export default function BookmarkList({
                            <Checkbox checked={showFavorites} className="mr-2" />
                            Show Favorites Only
                         </DropdownMenuItem>
+                        
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="ghost" className="w-full justify-start px-2">
+                                    <Star className="mr-2 h-4 w-4" />
+                                     Rating
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-2">
+                                <StarRating rating={ratingFilter} setRating={setRatingFilter} size={5} />
+                            </PopoverContent>
+                        </Popover>
 
                         <Popover>
                             <PopoverTrigger asChild>
@@ -343,6 +366,8 @@ export default function BookmarkList({
                         <SelectItem value="titleDesc">Title (Z-A)</SelectItem>
                         <SelectItem value="chapterDesc">Chapter (High-Low)</SelectItem>
                         <SelectItem value="chapterAsc">Chapter (Low-High)</SelectItem>
+                        <SelectItem value="ratingDesc">Rating (High-Low)</SelectItem>
+                        <SelectItem value="ratingAsc">Rating (Low-High)</SelectItem>
                     </SelectContent>
                 </Select>
                  <ToggleGroup type="single" value={layout} onValueChange={(value) => value && setLayout(value as ViewLayout)} aria-label="View layout">
@@ -435,6 +460,14 @@ export default function BookmarkList({
           {showFavorites && (
               <Badge variant="secondary" className="pl-2 pr-1 cursor-pointer hover:bg-muted" onClick={() => setShowFavorites(false)}>
                 <Star className="w-3 h-3 mr-1" /> Favorites
+                <button className="ml-1 rounded-full hover:bg-background/50 p-0.5">
+                    <X className="w-3 h-3"/>
+                </button>
+            </Badge>
+          )}
+          {ratingFilter > 0 && (
+              <Badge variant="secondary" className="pl-2 pr-1 cursor-pointer hover:bg-muted" onClick={() => setRatingFilter(0)}>
+                <StarRating rating={ratingFilter} size={3} />
                 <button className="ml-1 rounded-full hover:bg-background/50 p-0.5">
                     <X className="w-3 h-3"/>
                 </button>

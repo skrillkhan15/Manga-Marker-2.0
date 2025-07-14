@@ -14,6 +14,7 @@ import { useMemo, useRef } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SwipeArea } from './SwipeArea';
 import { useToast } from '@/hooks/use-toast';
+import { StarRating } from './StarRating';
 
 
 interface BookmarkListItemProps {
@@ -97,7 +98,7 @@ export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFav
                 />
             </div>
         )}
-        <div className="flex-1 grid grid-cols-4 gap-4 items-center">
+        <div className="flex-1 grid grid-cols-5 gap-4 items-center">
             <div className="flex flex-col col-span-2">
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -121,6 +122,10 @@ export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFav
                 )}
             </div>
             
+             <div className="flex justify-center">
+                {(bookmark.rating ?? 0) > 0 && <StarRating rating={bookmark.rating || 0} />}
+            </div>
+
             <div className="flex items-center gap-2 justify-center">
                 <Button variant="outline" size="icon" className="w-7 h-7" onClick={() => onUpdateChapter(bookmark.id, (bookmark.chapter || 0) - 1)} disabled={(bookmark.chapter || 0) <= 0}>
                     <Minus className="w-4 h-4" />
