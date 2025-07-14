@@ -62,7 +62,7 @@ export default function BookmarkCard({ bookmark, onEdit, onToggleFavorite, onUpd
 
 
   return (
-    <Card className={`flex flex-col bg-background/30 backdrop-blur-lg border shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1 ${isSelected ? 'border-primary shadow-primary/30' : 'border-white/20'}`}>
+    <Card className={`flex flex-col bg-background/30 backdrop-blur-lg border shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1 ${isSelected ? 'border-primary shadow-primary/30' : 'border-white/20'} animate-fade-in`}>
         <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-2">
             <div className="flex items-center h-full pt-1">
                 <Checkbox

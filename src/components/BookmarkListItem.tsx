@@ -32,7 +32,7 @@ export default function BookmarkListItem({ bookmark, onEdit, onToggleFavorite, o
   const currentStatus = statusConfig[bookmark.status] || statusConfig['plan-to-read'];
 
   return (
-    <div className={`flex items-center gap-4 p-2 rounded-lg border transition-colors ${isSelected ? 'bg-muted/80 border-primary' : 'bg-muted/30 hover:bg-muted/60'}`}>
+    <div className={`flex items-center gap-4 p-2 rounded-lg border transition-colors animate-fade-in ${isSelected ? 'bg-muted/80 border-primary' : 'bg-muted/30 hover:bg-muted/60'}`}>
         <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) => onSelectionChange(bookmark.id, !!checked)}
