@@ -358,7 +358,7 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="No folder" />
-                                            </Trigger>
+                                            </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
                                             <SelectItem value="__none__">No folder</SelectItem>
