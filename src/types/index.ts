@@ -1,3 +1,4 @@
+
 export type ReadingStatus = 'reading' | 'completed' | 'on-hold' | 'dropped' | 'plan-to-read';
 
 export interface Bookmark {
