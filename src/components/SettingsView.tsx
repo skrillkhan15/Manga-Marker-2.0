@@ -91,6 +91,7 @@ export default function SettingsView({
     const [isDevMode, setIsDevMode] = useLocalStorage('mangamarks-dev-mode-enabled', false);
 
     const { theme, setTheme } = useTheme();
+    const [appTheme, setAppTheme] = useLocalStorage<ThemeName>('mangamarks-app-theme', 'system');
 
     useEffect(() => {
         const storedFontSize = localStorage.getItem('mangamarks-font-size');
@@ -102,7 +103,18 @@ export default function SettingsView({
         if (backupTime) {
             setAutoBackupTimestamp(new Date(parseInt(backupTime, 10)).toLocaleString());
         }
-    }, []);
+
+        // Apply theme class on mount
+        document.body.classList.forEach(className => {
+            if (className.startsWith('theme-')) {
+                document.body.classList.remove(className);
+            }
+        });
+        if (appTheme !== 'system' && appTheme !== 'light' && appTheme !== 'dark') {
+             document.body.classList.add(`theme-${appTheme}`);
+        }
+
+    }, [appTheme]);
 
     const handleFontSizeChange = (value: number[]) => {
         const newSize = value[0];
@@ -113,19 +125,12 @@ export default function SettingsView({
 
     const handleThemeChange = (newTheme: ThemeName) => {
         triggerHapticFeedback();
-        const currentThemeName = document.body.dataset.themeName;
-        if (currentThemeName) {
-            document.body.classList.remove(`theme-${currentThemeName}`);
+        setAppTheme(newTheme);
+
+        // This handles light/dark mode for next-themes
+        if (newTheme === 'light' || newTheme === 'dark' || newTheme === 'system') {
+            setTheme(newTheme);
         }
-        if (newTheme !== 'system' && newTheme !== 'light' && newTheme !== 'dark') {
-            document.body.classList.add(`theme-${newTheme}`);
-            document.body.dataset.themeName = newTheme;
-            localStorage.setItem('mangamarks-app-theme', newTheme);
-        } else {
-            delete document.body.dataset.themeName;
-            localStorage.removeItem('mangamarks-app-theme');
-        }
-        setTheme(newTheme);
     };
 
     const tagCounts = useMemo(() => {
@@ -381,7 +386,7 @@ export default function SettingsView({
                         <Label>Theme</Label>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
                            {themes.map(t => (
-                                <Button key={t.name} variant={theme === t.name ? 'default' : 'outline'} onClick={() => handleThemeChange(t.name)}>
+                                <Button key={t.name} variant={appTheme === t.name ? 'default' : 'outline'} onClick={() => handleThemeChange(t.name)}>
                                    <t.icon className="mr-2 h-4 w-4" />
                                    {t.label}
                                 </Button>
