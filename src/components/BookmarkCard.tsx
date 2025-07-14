@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { Trash2, ArrowUpRight } from 'lucide-react';
 import {
@@ -31,7 +32,11 @@ interface BookmarkCardProps {
 }
 
 export default function BookmarkCard({ bookmark, onDelete }: BookmarkCardProps) {
-    const lastUpdatedText = formatDistanceToNow(new Date(bookmark.lastUpdated), { addSuffix: true });
+  const [lastUpdatedText, setLastUpdatedText] = useState('');
+
+  useEffect(() => {
+    setLastUpdatedText(formatDistanceToNow(new Date(bookmark.lastUpdated), { addSuffix: true }));
+  }, [bookmark.lastUpdated]);
   
   return (
     <Card className="bg-background/30 backdrop-blur-lg border border-white/20 shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1">
