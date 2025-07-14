@@ -17,19 +17,22 @@ import { X } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { BookmarkSheet } from './BookmarkSheet';
+import { BookmarkDialog } from './BookmarkDialog';
 
 interface BookmarkListProps {
   bookmarks: Bookmark[];
   readingStatuses: ReadingStatus[];
   onDelete: (ids: string[]) => void;
-  onEdit: (bookmark: Bookmark) => void;
+  onEditSubmit: (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite'>, id?: string) => void;
   onToggleFavorite: (id: string) => void;
   onUpdateChapter: (id: string, newChapter: number) => void;
   onUpdateStatus: (ids: string[], statusId: string) => void;
   allTags: string[];
 }
 
-export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onEdit, onToggleFavorite, onUpdateChapter, onUpdateStatus, allTags }: BookmarkListProps) {
+export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onEditSubmit, onToggleFavorite, onUpdateChapter, onUpdateStatus, allTags }: BookmarkListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("lastUpdatedDesc");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -38,6 +41,30 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onE
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [layout, setLayout] = useState<ViewLayout>('grid');
   const [isCompact, setIsCompact] = useState(false);
+  const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  const handleEdit = (bookmark: Bookmark) => {
+    setEditingBookmark(bookmark);
+    if (isMobile) {
+      setIsSheetOpen(true);
+    } else {
+      setIsDialogOpen(true);
+    }
+  };
+
+  const handleEditorClose = () => {
+    setEditingBookmark(null);
+    setIsSheetOpen(false);
+    setIsDialogOpen(false);
+  };
+
+  const handleEditSave = (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite'>, id?: string) => {
+    onEditSubmit(data, id);
+    handleEditorClose();
+  };
 
   const statusesById = useMemo(() => {
     return readingStatuses.reduce((acc, status) => {
@@ -153,7 +180,7 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onE
                     <DropdownMenuContent className="w-56">
                         <DropdownMenuLabel>Filter By</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => setShowFavorites(!showFavorites)}>
+                        <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowFavorites(!showFavorites); }}>
                            <Checkbox checked={showFavorites} className="mr-2" />
                            Show Favorites Only
                         </DropdownMenuItem>
@@ -335,7 +362,7 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onE
               key={bookmark.id} 
               bookmark={bookmark}
               status={statusesById[bookmark.statusId]}
-              onEdit={onEdit} 
+              onEdit={handleEdit} 
               onToggleFavorite={onToggleFavorite}
               onUpdateChapter={onUpdateChapter}
               isSelected={selectedBookmarks.includes(bookmark.id)}
@@ -351,7 +378,7 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onE
               key={bookmark.id} 
               bookmark={bookmark} 
               status={statusesById[bookmark.statusId]}
-              onEdit={onEdit} 
+              onEdit={handleEdit} 
               onToggleFavorite={onToggleFavorite}
               onUpdateChapter={onUpdateChapter}
               isSelected={selectedBookmarks.includes(bookmark.id)}
@@ -361,6 +388,24 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onE
           ))}
         </div>
       )}
+      {isMobile ? (
+         <BookmarkSheet 
+            open={isSheetOpen}
+            onOpenChange={setIsSheetOpen}
+            onSubmit={handleEditSave}
+            bookmark={editingBookmark}
+            readingStatuses={readingStatuses}
+          />
+      ) : (
+        <BookmarkDialog
+            open={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+            onSubmit={handleEditSave}
+            bookmark={editingBookmark}
+            readingStatuses={readingStatuses}
+        />
+      )}
+
     </div>
   );
 }

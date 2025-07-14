@@ -7,7 +7,6 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { extractMetadata } from '@/ai/flows/extract-metadata-flow';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -20,20 +19,19 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import type { Bookmark, ReadingStatus } from "@/types";
 import { Badge } from "./ui/badge";
-import { X, Upload, Sparkles, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { X, Upload } from "lucide-react";
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title cannot be empty." }),
@@ -48,7 +46,7 @@ const formSchema = z.object({
 
 type BookmarkFormValues = z.infer<typeof formSchema>;
 
-interface BookmarkDialogProps {
+interface BookmarkSheetProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit: (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite'>, id?: string) => void;
@@ -56,12 +54,10 @@ interface BookmarkDialogProps {
     readingStatuses: ReadingStatus[];
 }
 
-export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark, readingStatuses }: BookmarkDialogProps) {
+export function BookmarkSheet({ open, onOpenChange, onSubmit, bookmark, readingStatuses }: BookmarkSheetProps) {
   const [tagInput, setTagInput] = useState('');
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const [isFetching, setIsFetching] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
 
   const form = useForm<BookmarkFormValues>({
     resolver: zodResolver(formSchema),
@@ -108,7 +104,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark, reading
   const urlValue = form.watch('url');
 
   useEffect(() => {
-    if (urlValue && !isFetching) { // Don't auto-detect while AI is fetching
+    if (urlValue) {
       const match = urlValue.match(/(?:[/-]|chapter(?:-|_))(\d+(?:\.\d+)?)(?=[/?#]|$)/i);
       if (match && match[1]) {
         const chapterNumber = parseFloat(match[1]);
@@ -117,39 +113,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark, reading
         }
       }
     }
-  }, [urlValue, form, isFetching]);
-
-  const handleFetchMetadata = async () => {
-    const url = form.getValues('url');
-    if (!url || !z.string().url().safeParse(url).success) {
-      toast({
-        title: "Invalid URL",
-        description: "Please enter a valid URL to fetch metadata.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsFetching(true);
-    try {
-      const metadata = await extractMetadata({ url });
-      form.setValue('title', metadata.title, { shouldValidate: true });
-      form.setValue('chapter', metadata.chapter, { shouldValidate: true });
-      toast({
-        title: "Metadata Extracted!",
-        description: "Title and chapter have been filled in.",
-      });
-    } catch (error) {
-      console.error("Failed to fetch metadata:", error);
-      toast({
-        title: "Extraction Failed",
-        description: "Could not automatically extract metadata. Please fill in the details manually.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsFetching(false);
-    }
-  };
+  }, [urlValue, form]);
 
   const handleFormSubmit = (values: BookmarkFormValues) => {
     onSubmit(values, bookmark?.id);
@@ -189,16 +153,16 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark, reading
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{bookmark ? 'Edit Bookmark' : 'Add New Bookmark'}</DialogTitle>
-          <DialogDescription>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="max-h-[90vh]">
+        <SheetHeader>
+          <SheetTitle>{bookmark ? 'Edit Bookmark' : 'Add New Bookmark'}</SheetTitle>
+          <SheetDescription>
             {bookmark ? 'Update the details for your bookmark.' : 'Add a new manga or manhwa to your list.'}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto p-1">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 overflow-y-auto p-1 mt-4">
              <FormField
                 control={form.control}
                 name="coverImage"
@@ -236,27 +200,6 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark, reading
             />
             <FormField
               control={form.control}
-              name="url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Chapter URL</FormLabel>
-                  <div className="flex gap-2">
-                    <FormControl>
-                      <Input placeholder="https://.../chapter-123" {...field} />
-                    </FormControl>
-                    <Button type="button" variant="outline" size="icon" onClick={handleFetchMetadata} disabled={isFetching} aria-label="Fetch metadata">
-                      {isFetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                  <FormDescription>
-                    Enter a URL and click the ✨ button to auto-fill details.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
               name="title"
               render={({ field }) => (
                 <FormItem>
@@ -264,6 +207,22 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark, reading
                   <FormControl>
                     <Input placeholder="e.g., Solo Leveling" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Chapter URL</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://.../chapter-123" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    The chapter number will be detected automatically.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -365,13 +324,13 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark, reading
                   </FormItem>
                 )}
             />
-            <DialogFooter className="pt-4">
+            <SheetFooter className="pt-4 flex flex-row justify-end">
                 <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
                 <Button type="submit">{bookmark ? 'Save Changes' : 'Add Bookmark'}</Button>
-            </DialogFooter>
+            </SheetFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

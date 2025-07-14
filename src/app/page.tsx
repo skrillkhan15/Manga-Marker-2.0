@@ -209,7 +209,7 @@ export default function Home() {
                         bookmarks={bookmarks}
                         readingStatuses={readingStatuses}
                         onDelete={deleteBookmarks}
-                        onEdit={handleEdit}
+                        onEditSubmit={addOrUpdateBookmark}
                         onToggleFavorite={toggleFavorite}
                         onUpdateChapter={updateChapter}
                         onUpdateStatus={updateBookmarkStatus}

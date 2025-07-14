@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { Bookmark, ReadingStatus, BackupData, ThemeName } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
-import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History } from "lucide-react";
+import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History, Lock } from "lucide-react";
 import { format } from 'date-fns';
 import { Input } from './ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
@@ -16,6 +16,7 @@ import { Badge } from './ui/badge';
 import { Label } from './ui/label';
 import { Slider } from './ui/slider';
 import { useTheme } from 'next-themes';
+import * as CryptoJS from 'crypto-js';
 
 interface SettingsViewProps {
     bookmarks: Bookmark[];
@@ -45,6 +46,10 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
     const [editingTag, setEditingTag] = useState<{ oldName: string; newName: string } | null>(null);
     const [fontSize, setFontSize] = useState(16);
     const [autoBackupTimestamp, setAutoBackupTimestamp] = useState<string | null>(null);
+    const [exportPassword, setExportPassword] = useState('');
+    const [importPassword, setImportPassword] = useState('');
+    const [isEncryptedExportOpen, setIsEncryptedExportOpen] = useState(false);
+    const [isEncryptedImportOpen, setIsEncryptedImportOpen] = useState(false);
 
     const { theme, setTheme } = useTheme();
 
@@ -98,7 +103,7 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
         return counts;
     }, [bookmarks, allTags]);
 
-    const handleExport = () => {
+    const handleExport = (password?: string) => {
         if (bookmarks.length === 0) {
             toast({ title: "No Bookmarks", description: "There's nothing to export yet.", variant: "destructive" });
             return;
@@ -107,15 +112,23 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
             bookmarks,
             readingStatuses,
         };
-        const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-          JSON.stringify(dataToExport, null, 2)
-        )}`;
+        let jsonString = JSON.stringify(dataToExport, null, 2);
+
+        if(password) {
+            jsonString = CryptoJS.AES.encrypt(jsonString, password).toString();
+        }
+
+        const blob = new Blob([jsonString], {type: "text/json;charset=utf-8"});
         const link = document.createElement("a");
-        link.href = jsonString;
+        link.href = URL.createObjectURL(blob);
         const timestamp = format(new Date(), 'yyyy-MM-dd_HH-mm-ss');
-        link.download = `MangaMarks_Backup_${timestamp}.json`;
+        link.download = `MangaMarks_Backup_${timestamp}${password ? '_encrypted' : ''}.json`;
         link.click();
-        toast({ title: "Export Successful", description: "Your bookmarks and statuses have been downloaded."});
+        URL.revokeObjectURL(link.href);
+
+        toast({ title: "Export Successful", description: `Your data has been downloaded${password ? ' and encrypted' : ''}.`});
+        if(isEncryptedExportOpen) setIsEncryptedExportOpen(false);
+        setExportPassword('');
     };
 
     const handleImportClick = () => {
@@ -133,27 +146,82 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
             if (typeof text !== 'string') {
               throw new Error("File content is not valid text.");
             }
-            const importedData = JSON.parse(text);
-            
-            const importedBookmarks = importedData.bookmarks;
-            const importedStatuses = importedData.readingStatuses;
 
-            if (Array.isArray(importedBookmarks) && importedBookmarks.every(b => b.id && b.title && b.url && b.lastUpdated) && Array.isArray(importedStatuses)) {
-              setBookmarks(importedBookmarks);
-              setReadingStatuses(importedStatuses);
-              toast({ title: "Import Successful", description: "Your bookmarks and statuses have been loaded." });
-            } else {
-              throw new Error("Invalid backup file format.");
+            if(text.includes('U2FsdGVkX1')) { // Basic check for an encrypted file
+                setIsEncryptedImportOpen(true);
+                 // We need to store the file content to be used after password input
+                reader.onload = () => {
+                    handleEncryptedImport(text, importPassword)
+                };
+                return; // Stop here, wait for password
             }
+
+            parseAndLoadData(text);
+
           } catch (error) {
-            const description = error instanceof Error ? error.message : "Could not import data. File may be corrupt or in the wrong format.";
-            toast({ title: "Import Failed", description, variant: "destructive" });
+            handleImportError(error);
           } finally {
             if(event.target) event.target.value = '';
           }
         };
-        reader.readAsText(file);
+
+        const handleEncryptedImport = (encryptedData: string, password: string) => {
+            if (!password) {
+                toast({ title: "Import Failed", description: "Password is required for encrypted files.", variant: "destructive" });
+                return;
+            }
+            try {
+                const decrypted = CryptoJS.AES.decrypt(encryptedData, password);
+                const decryptedText = decrypted.toString(CryptoJS.enc.Utf8);
+                if (!decryptedText) {
+                    throw new Error("Invalid password or corrupted file.");
+                }
+                parseAndLoadData(decryptedText);
+                setIsEncryptedImportOpen(false);
+                setImportPassword('');
+            } catch (error) {
+                handleImportError(error);
+            }
+        }
+        
+        // This is a bit of a hack to re-use the reader with a new onload
+        const originalOnload = reader.onload;
+        const tempReader = new FileReader();
+        tempReader.onload = (e) => {
+             const text = e.target?.result as string;
+             if(text.includes('U2FsdGVkX1')) {
+                setIsEncryptedImportOpen(true);
+                const importBtn = document.getElementById('confirm-encrypted-import');
+                importBtn?.addEventListener('click', () => {
+                    const password = (document.getElementById('import-password-input') as HTMLInputElement)?.value;
+                    handleEncryptedImport(text, password);
+                }, { once: true });
+             } else {
+                 if(originalOnload) originalOnload.call(reader, e);
+             }
+        }
+        tempReader.readAsText(file);
     };
+
+    const parseAndLoadData = (jsonData: string) => {
+        const importedData = JSON.parse(jsonData);
+        
+        const importedBookmarks = importedData.bookmarks;
+        const importedStatuses = importedData.readingStatuses;
+
+        if (Array.isArray(importedBookmarks) && Array.isArray(importedStatuses)) {
+            setBookmarks(importedBookmarks);
+            setReadingStatuses(importedStatuses);
+            toast({ title: "Import Successful", description: "Your bookmarks and statuses have been loaded." });
+        } else {
+            throw new Error("Invalid backup file format.");
+        }
+    }
+
+    const handleImportError = (error: unknown) => {
+        const description = error instanceof Error ? error.message : "Could not import data. File may be corrupt or in the wrong format.";
+        toast({ title: "Import Failed", description, variant: "destructive" });
+    }
     
     const handleRestoreAutoBackup = () => {
         const backupDataString = localStorage.getItem('mangamarks-autobackup');
@@ -236,7 +304,7 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
                 <CardContent className="space-y-6">
                     <div>
                         <Label>Theme</Label>
-                        <div className="grid grid-cols-3 gap-2 mt-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
                            {themes.map(t => (
                                 <Button key={t.name} variant={theme === t.name ? 'default' : 'outline'} onClick={() => handleThemeChange(t.name)}>
                                    <t.icon className="mr-2 h-4 w-4" />
@@ -269,14 +337,63 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
                     <CardDescription>Import or export your bookmarks. Importing will overwrite your current lists.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <Button onClick={handleImportClick} variant="outline" className="w-full">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Button onClick={() => handleExport()} disabled={bookmarks.length === 0} className="w-full">
+                            <Download className="mr-2 h-4 w-4" /> Export to JSON
+                        </Button>
+                        <AlertDialog open={isEncryptedExportOpen} onOpenChange={setIsEncryptedExportOpen}>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="secondary" disabled={bookmarks.length === 0} className="w-full">
+                                    <Lock className="mr-2 h-4 w-4" /> Encrypt & Export
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Set Export Password</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Enter a password to encrypt your backup file. You will need this password to import it later.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <Input 
+                                    id="export-password-input"
+                                    type="password"
+                                    placeholder="Enter password..."
+                                    value={exportPassword}
+                                    onChange={(e) => setExportPassword(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleExport(exportPassword)}
+                                />
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleExport(exportPassword)} disabled={!exportPassword}>Confirm & Export</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+
+                        <Button onClick={handleImportClick} variant="outline" className="w-full col-span-1 sm:col-span-2">
                             <Upload className="mr-2 h-4 w-4" /> Import from JSON
                         </Button>
                         <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />
-                        <Button onClick={handleExport} disabled={bookmarks.length === 0} className="w-full">
-                            <Download className="mr-2 h-4 w-4" /> Export to JSON
-                        </Button>
+                         <AlertDialog open={isEncryptedImportOpen} onOpenChange={setIsEncryptedImportOpen}>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Encrypted File Detected</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Please enter the password to decrypt and import your backup file.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <Input 
+                                    id="import-password-input"
+                                    type="password"
+                                    placeholder="Enter password..."
+                                    value={importPassword}
+                                    onChange={(e) => setImportPassword(e.target.value)}
+                                />
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel onClick={() => setImportPassword('')}>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction id="confirm-encrypted-import" disabled={!importPassword}>Decrypt & Import</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                     <div className="flex items-center gap-4 p-4 border rounded-lg">
                         <History className="h-6 w-6 text-muted-foreground" />
