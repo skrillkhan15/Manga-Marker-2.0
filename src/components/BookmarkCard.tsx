@@ -16,6 +16,7 @@ import type { Bookmark, ReadingStatus } from "@/types";
 import { Checkbox } from './ui/checkbox';
 import { Badge } from './ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { Progress } from './ui/progress';
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -60,6 +61,12 @@ export default function BookmarkCard({ bookmark, onEdit, onToggleFavorite, onUpd
     
     const currentStatus = statusConfig[bookmark.status] || statusConfig['plan-to-read'];
 
+    const progress = useMemo(() => {
+      if (bookmark.totalChapters && bookmark.totalChapters > 0) {
+        return Math.round(((bookmark.chapter || 0) / bookmark.totalChapters) * 100);
+      }
+      return null;
+    }, [bookmark.chapter, bookmark.totalChapters]);
 
   return (
     <Card className={`flex flex-col bg-background/30 backdrop-blur-lg border shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1 ${isSelected ? 'border-primary shadow-primary/30' : 'border-white/20'} animate-fade-in`}>
@@ -116,12 +123,21 @@ export default function BookmarkCard({ bookmark, onEdit, onToggleFavorite, onUpd
                 </Button>
             </div>
       </CardHeader>
-      <CardContent className="flex-grow pb-4 px-6">
+      <CardContent className="flex-grow pb-4 px-6 space-y-3">
+        {progress !== null && (
+          <div>
+            <div className="flex justify-between items-center text-xs text-muted-foreground mb-1">
+              <span>Progress</span>
+              <span>{bookmark.chapter}/{bookmark.totalChapters} ({progress}%)</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+        )}
         <p className="text-xs text-muted-foreground" title={initialDate}>
             Updated: {lastUpdatedText || initialDate}
         </p>
         {(bookmark.tags && bookmark.tags.length > 0) || bookmark.notes ? (
-          <div className="flex items-start gap-1.5 mt-3 flex-wrap">
+          <div className="flex items-start gap-1.5 flex-wrap">
              {bookmark.tags && bookmark.tags.length > 0 && (
                  <Tooltip>
                     <TooltipTrigger className="flex items-center gap-1.5 flex-wrap">

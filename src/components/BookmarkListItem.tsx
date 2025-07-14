@@ -9,6 +9,8 @@ import type { Bookmark, ReadingStatus } from "@/types";
 import { Checkbox } from './ui/checkbox';
 import { Badge } from './ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { Progress } from './ui/progress';
+import { useMemo } from 'react';
 
 interface BookmarkListItemProps {
   bookmark: Bookmark;
@@ -30,6 +32,12 @@ const statusConfig: Record<ReadingStatus, { label: string, icon: React.ReactNode
 export default function BookmarkListItem({ bookmark, onEdit, onToggleFavorite, onUpdateChapter, isSelected, onSelectionChange }: BookmarkListItemProps) {
   const lastUpdatedText = formatDistanceToNow(new Date(bookmark.lastUpdated), { addSuffix: true });
   const currentStatus = statusConfig[bookmark.status] || statusConfig['plan-to-read'];
+  const progress = useMemo(() => {
+    if (bookmark.totalChapters && bookmark.totalChapters > 0) {
+      return Math.round(((bookmark.chapter || 0) / bookmark.totalChapters) * 100);
+    }
+    return null;
+  }, [bookmark.chapter, bookmark.totalChapters]);
 
   return (
     <div className={`flex items-center gap-4 p-2 rounded-lg border transition-colors animate-fade-in ${isSelected ? 'bg-muted/80 border-primary' : 'bg-muted/30 hover:bg-muted/60'}`}>
@@ -49,12 +57,19 @@ export default function BookmarkListItem({ bookmark, onEdit, onToggleFavorite, o
                 className="bg-muted"
             />
         </div>
-        <div className="flex-1 grid grid-cols-3 gap-4 items-center">
-            <div className="flex flex-col">
+        <div className="flex-1 grid grid-cols-4 gap-4 items-center">
+            <div className="flex flex-col col-span-2">
                 <a href={bookmark.url} target="_blank" rel="noopener noreferrer" className="font-semibold hover:underline truncate" title={bookmark.title}>
                     {bookmark.title}
                 </a>
-                <span className="text-xs text-muted-foreground">Updated {lastUpdatedText}</span>
+                {progress !== null ? (
+                    <div className="flex items-center gap-2 mt-1">
+                        <Progress value={progress} className="h-1.5 w-24" />
+                        <span className="text-xs text-muted-foreground">{bookmark.chapter}/{bookmark.totalChapters}</span>
+                    </div>
+                ) : (
+                    <span className="text-xs text-muted-foreground">Updated {lastUpdatedText}</span>
+                )}
             </div>
             
             <div className="flex items-center gap-2 justify-center">

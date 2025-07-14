@@ -46,6 +46,7 @@ const formSchema = z.object({
   title: z.string().min(1, { message: "Title cannot be empty." }),
   url: z.string().url({ message: "Please enter a valid URL." }),
   chapter: z.coerce.number().min(0).optional(),
+  totalChapters: z.coerce.number().min(0).optional(),
   tags: z.array(z.string()).optional(),
   coverImage: z.string().optional(),
   status: z.enum(readingStatuses),
@@ -72,6 +73,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
       title: "",
       url: "",
       chapter: 0,
+      totalChapters: 0,
       tags: [],
       coverImage: "",
       status: "plan-to-read",
@@ -85,6 +87,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
         title: bookmark.title,
         url: bookmark.url,
         chapter: bookmark.chapter || 0,
+        totalChapters: bookmark.totalChapters || 0,
         tags: bookmark.tags || [],
         coverImage: bookmark.coverImage || "",
         status: bookmark.status || "plan-to-read",
@@ -96,6 +99,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
         title: "",
         url: "",
         chapter: 0,
+        totalChapters: 0,
         tags: [],
         coverImage: "",
         status: "plan-to-read",
@@ -247,7 +251,21 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
                     </FormItem>
                     )}
                 />
-                <FormField
+                 <FormField
+                    control={form.control}
+                    name="totalChapters"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Total Chapters</FormLabel>
+                        <FormControl>
+                        <Input type="number" placeholder="e.g., 150" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+             </div>
+             <FormField
                     control={form.control}
                     name="status"
                     render={({ field }) => (
@@ -271,7 +289,6 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
                         </FormItem>
                     )}
                 />
-             </div>
             <FormField
               control={form.control}
               name="tags"

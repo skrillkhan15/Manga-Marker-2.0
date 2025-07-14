@@ -9,6 +9,7 @@ export interface Bookmark {
   isFavorite: boolean;
   coverImage?: string; // Base64 encoded image data URL
   chapter?: number;
+  totalChapters?: number;
   status: ReadingStatus;
   notes?: string;
 }
