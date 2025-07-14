@@ -79,8 +79,6 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
     },
   });
   
-  const urlValue = form.watch('url');
-
   useEffect(() => {
     if (bookmark) {
       form.reset({
@@ -106,6 +104,8 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
       setCoverPreview(null);
     }
   }, [bookmark, form, open]);
+
+  const urlValue = form.watch('url');
 
   useEffect(() => {
     if (urlValue) {
