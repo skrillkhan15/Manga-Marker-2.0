@@ -15,6 +15,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { SwipeArea } from './SwipeArea';
 import { useToast } from '@/hooks/use-toast';
 import { StarRating } from './StarRating';
+import { cn } from '@/lib/utils';
 
 
 interface BookmarkListItemProps {
@@ -73,7 +74,12 @@ export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFav
   const listItemContent = (
       <div 
         ref={itemRef}
-        className={`flex items-center gap-4 p-2 rounded-lg border transition-colors w-full animate-fade-in ${isSelected ? 'bg-muted/80 border-primary' : 'bg-muted/30 hover:bg-muted/60'}`}
+        className={cn(
+            "flex items-center gap-4 p-2 rounded-lg border transition-colors w-full animate-fade-in",
+            isSelected ? 'bg-muted/80 border-primary' : 'bg-muted/30 hover:bg-muted/60',
+            bookmark.color && 'border-l-4'
+        )}
+        style={{ borderColor: bookmark.color }}
         onTouchStart={handlePointerDown}
         onTouchEnd={handlePointerUp}
         onMouseDown={handlePointerDown}

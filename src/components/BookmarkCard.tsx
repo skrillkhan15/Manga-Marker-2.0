@@ -21,6 +21,7 @@ import { SwipeArea } from './SwipeArea';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { StarRating } from './StarRating';
+import { cn } from '@/lib/utils';
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -98,7 +99,12 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
   const cardContent = (
     <Card 
         ref={cardRef}
-        className={`flex flex-col bg-background/30 backdrop-blur-lg border shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1 w-full ${isSelected ? 'border-primary shadow-primary/30' : 'border-white/20'} animate-fade-in`}
+        className={cn(
+            "flex flex-col bg-background/30 backdrop-blur-lg border shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1 w-full animate-fade-in",
+            isSelected ? 'border-primary shadow-primary/30' : 'border-white/20',
+            bookmark.color && 'border-l-4'
+        )}
+        style={{ borderColor: bookmark.color }}
         onTouchStart={handlePointerDown}
         onTouchEnd={handlePointerUp}
         onMouseDown={handlePointerDown}

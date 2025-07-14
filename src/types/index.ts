@@ -34,6 +34,7 @@ export interface Bookmark {
   folderId?: string;
   reminderDate?: string; // ISO string for the reminder
   rating?: number; // 0-5 stars
+  color?: string; // User-assigned color label
 }
 
 export type ActivityLogType = 'CREATE' | 'UPDATE' | 'DELETE' | 'FAVORITE' | 'STATUS' | 'MOVE';

@@ -39,6 +39,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ScrollArea } from "./ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 import { StarRating } from "./StarRating";
+import { ColorPicker } from "./ColorPicker";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title cannot be empty." }),
@@ -53,6 +55,7 @@ const formSchema = z.object({
   folderId: z.string().optional(),
   reminderDays: z.coerce.number().min(0).optional(),
   rating: z.coerce.number().min(0).max(5).optional(),
+  color: z.string().optional(),
 });
 
 type BookmarkFormValues = z.infer<typeof formSchema>;
@@ -89,6 +92,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
       folderId: "",
       reminderDays: 0,
       rating: 0,
+      color: "",
     },
   });
   
@@ -108,6 +112,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
           folderId: bookmark.folderId || "",
           reminderDays: 0, // Don't pre-fill reminder, it's a one-time action
           rating: bookmark.rating || 0,
+          color: bookmark.color || "",
         });
         setCoverPreview(bookmark.coverImage || null);
       } else {
@@ -124,6 +129,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
           folderId: "",
           reminderDays: 0,
           rating: 0,
+          color: "",
         });
         setCoverPreview(null);
       }
@@ -131,6 +137,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
   }, [bookmark, form, open, readingStatuses]);
 
   const urlValue = form.watch('url');
+  const colorValue = form.watch('color');
 
   useEffect(() => {
     if (urlValue && !isFetching) { // Don't auto-detect while AI is fetching
@@ -422,6 +429,32 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
                   )}
                 />
                 <FormField
+                    control={form.control}
+                    name="color"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Color Label</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full justify-start text-left font-normal"
+                                        >
+                                            <div className="w-5 h-5 rounded-sm border mr-2" style={{ backgroundColor: colorValue }} />
+                                            {colorValue ? <span>{colorValue}</span> : <span className="text-muted-foreground">Select a color</span>}
+                                        </Button>
+                                    </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <ColorPicker color={field.value || ''} onChange={field.onChange} />
+                                </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
                   control={form.control}
                   name="tags"
                   render={({ field }) => (
@@ -522,5 +555,3 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
     </Dialog>
   );
 }
-
-    
