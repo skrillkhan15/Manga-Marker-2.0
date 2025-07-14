@@ -156,7 +156,6 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
     }
   };
 
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
