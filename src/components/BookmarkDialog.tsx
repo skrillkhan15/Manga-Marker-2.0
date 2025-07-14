@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -25,9 +26,20 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import type { Bookmark } from "@/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import type { Bookmark, ReadingStatus } from "@/types";
 import { Badge } from "./ui/badge";
 import { X, Upload } from "lucide-react";
+
+const readingStatuses: ReadingStatus[] = ['reading', 'completed', 'on-hold', 'dropped', 'plan-to-read'];
+const statusLabels: Record<ReadingStatus, string> = {
+  'reading': 'Reading',
+  'completed': 'Completed',
+  'on-hold': 'On Hold',
+  'dropped': 'Dropped',
+  'plan-to-read': 'Plan to Read',
+};
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title cannot be empty." }),
@@ -35,6 +47,8 @@ const formSchema = z.object({
   chapter: z.coerce.number().min(0).optional(),
   tags: z.array(z.string()).optional(),
   coverImage: z.string().optional(),
+  status: z.enum(readingStatuses),
+  notes: z.string().optional(),
 });
 
 type BookmarkFormValues = z.infer<typeof formSchema>;
@@ -59,6 +73,8 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
       chapter: 0,
       tags: [],
       coverImage: "",
+      status: "plan-to-read",
+      notes: "",
     },
   });
 
@@ -70,6 +86,8 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
         chapter: bookmark.chapter || 0,
         tags: bookmark.tags || [],
         coverImage: bookmark.coverImage || "",
+        status: bookmark.status || "plan-to-read",
+        notes: bookmark.notes || "",
       });
       setCoverPreview(bookmark.coverImage || null);
     } else {
@@ -79,10 +97,12 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
         chapter: 0,
         tags: [],
         coverImage: "",
+        status: "plan-to-read",
+        notes: "",
       });
       setCoverPreview(null);
     }
-  }, [bookmark, form, open]); // Added open to reset on reopen
+  }, [bookmark, form, open]);
 
   const handleFormSubmit = (values: BookmarkFormValues) => {
     onSubmit(values, bookmark?.id);
@@ -132,7 +152,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto p-1">
              <FormField
                 control={form.control}
                 name="coverImage"
@@ -194,19 +214,45 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
                 </FormItem>
               )}
             />
-             <FormField
-                control={form.control}
-                name="chapter"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Chapter</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="Current chapter" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+             <div className="grid grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="chapter"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Chapter</FormLabel>
+                        <FormControl>
+                        <Input type="number" placeholder="Current chapter" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Status</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a status" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {readingStatuses.map(status => (
+                                        <SelectItem key={status} value={status}>
+                                            {statusLabels[status]}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+             </div>
             <FormField
               control={form.control}
               name="tags"
@@ -235,7 +281,24 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
                 </FormItem>
             )}
             />
-            <DialogFooter>
+             <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                        <Textarea
+                            placeholder="Add personal notes here..."
+                            className="resize-y"
+                            {...field}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+            />
+            <DialogFooter className="pt-4">
                 <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
                 <Button type="submit">{bookmark ? 'Save Changes' : 'Add Bookmark'}</Button>
             </DialogFooter>

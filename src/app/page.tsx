@@ -55,8 +55,13 @@ export default function Home() {
   };
   
   const updateChapter = (id: string, newChapter: number) => {
-    setBookmarks(prev => prev.map(b => b.id === id ? { ...b, chapter: newChapter, lastUpdated: new Date().toISOString() } : b));
+    setBookmarks(prev => prev.map(b => b.id === id ? { ...b, chapter: newChapter >= 0 ? newChapter : 0, lastUpdated: new Date().toISOString() } : b));
   };
+
+  const updateBookmarkStatus = (ids: string[], status: Bookmark['status']) => {
+    const now = new Date().toISOString();
+    setBookmarks(prev => prev.map(b => ids.includes(b.id) ? { ...b, status, lastUpdated: now } : b));
+  }
 
   const handleEdit = (bookmark: Bookmark) => {
     setEditingBookmark(bookmark);
@@ -133,6 +138,7 @@ export default function Home() {
                 onEdit={handleEdit}
                 onToggleFavorite={toggleFavorite}
                 onUpdateChapter={updateChapter}
+                onUpdateStatus={updateBookmarkStatus}
                 allTags={allTags}
               />
             )}
