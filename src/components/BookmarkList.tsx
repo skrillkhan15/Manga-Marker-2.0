@@ -131,6 +131,7 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
     setStatusFilter('all');
   }
 
+  const isAnyFilterActive = showFavorites || statusFilter !== 'all' || selectedTags.length > 0;
 
   return (
     <div className="space-y-6">
@@ -243,8 +244,8 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
             </div>
         </div>
 
-      {(selectedTags.length > 0 || showFavorites || statusFilter !== 'all') && (
-        <div className="flex flex-wrap items-center gap-2">
+      {isAnyFilterActive && (
+        <div className="flex flex-wrap items-center gap-2 p-2 bg-muted/30 rounded-lg border">
           <span className="text-sm font-medium mr-2">Active filters:</span>
           {showFavorites && (
               <Badge variant="secondary" className="pl-2 pr-1">
@@ -270,7 +271,7 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
               </button>
             </Badge>
           ))}
-          <Button variant="ghost" size="sm" onClick={clearFilters} className="h-auto px-2 py-1 text-xs">Clear all</Button>
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="h-auto px-2 py-1 text-xs ml-auto">Clear all</Button>
         </div>
       )}
 
