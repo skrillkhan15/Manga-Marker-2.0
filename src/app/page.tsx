@@ -215,9 +215,8 @@ export default function Home() {
 
   const deleteBookmarks = (ids: string[]) => {
     const bookmarksToDelete = bookmarks.filter(b => ids.includes(b.id));
-    const remainingBookmarks = bookmarks.filter(b => !ids.includes(b.id));
     
-    setBookmarks(remainingBookmarks);
+    setBookmarks(prev => prev.filter(b => !ids.includes(b.id)));
 
     bookmarksToDelete.forEach(b => {
         addLogEntry('DELETE', `Deleted bookmark: "${b.title}".`, b.id, b.title);
@@ -555,11 +554,12 @@ export default function Home() {
                 <BookmarkList 
                     bookmarks={bookmarksInView}
                     setBookmarks={setBookmarks}
+                    allBookmarks={bookmarks}
                     readingStatuses={readingStatuses}
                     sortPresets={sortPresets}
                     setSortPresets={setSortPresets}
                     onDelete={deleteBookmarks}
-                    onToggleFavorite={toggleFavorite}
+                    toggleFavorite={toggleFavorite}
                     onTogglePinned={togglePinned}
                     onUpdateChapter={updateChapter}
                     onUpdateStatus={updateBookmarkStatus}

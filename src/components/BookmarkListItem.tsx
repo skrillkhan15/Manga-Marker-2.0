@@ -101,7 +101,7 @@ export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFav
             bookmark.color && !isSelected && 'border-l-4',
             isManualSortActive && 'cursor-grab active:cursor-grabbing'
         )}
-        style={{ borderColor: isSelected ? undefined : bookmark.color }}
+        style={{ borderColor: isSelected ? undefined : bookmark.color ?? (status?.color) }}
         onTouchStart={handlePointerDown}
         onTouchEnd={handlePointerUp}
         onMouseDown={handlePointerDown}

@@ -24,7 +24,7 @@ export interface Bookmark {
   lastUpdated: string;
   tags?: string[];
   isFavorite: boolean;
-  isPinned?: boolean;
+  isPinned: boolean;
   coverImage?: string; // Base64 encoded image data URL
   chapter?: number;
   totalChapters?: number;
@@ -66,6 +66,7 @@ export interface SortPreset {
     statusFilter: string;
     layout: ViewLayout;
     isCompact: boolean;
+    ratingFilter: number;
   };
 }
 

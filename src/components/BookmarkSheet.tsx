@@ -8,6 +8,7 @@ import * as z from "zod"
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { addDays, formatISO } from "date-fns";
+import { extractMetadata } from '@/ai/flows/extract-metadata-flow';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -32,13 +33,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import type { Bookmark, BookmarkHistory, ReadingStatus, Folder } from "@/types";
 import { Badge } from "./ui/badge";
-import { X, Upload, History, RotateCcw } from "lucide-react";
+import { X, Upload, History, RotateCcw, Sparkles, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ScrollArea } from "./ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 import { StarRating } from "./StarRating";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { ColorPicker } from "./ColorPicker";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title cannot be empty." }),
@@ -61,7 +63,7 @@ type BookmarkFormValues = z.infer<typeof formSchema>;
 interface BookmarkSheetProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'history'>, id?: string) => void;
+    onSubmit: (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'isPinned' | 'history'>, id?: string) => void;
     onRevert: (bookmarkId: string, historyEntry: BookmarkHistory) => void;
     bookmark: Bookmark | null;
     readingStatuses: ReadingStatus[];
@@ -71,7 +73,9 @@ interface BookmarkSheetProps {
 export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark, readingStatuses, folders }: BookmarkSheetProps) {
   const [tagInput, setTagInput] = useState('');
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [isFetching, setIsFetching] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const form = useForm<BookmarkFormValues>({
     resolver: zodResolver(formSchema),
@@ -136,7 +140,7 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
   const colorValue = form.watch('color');
 
   useEffect(() => {
-    if (urlValue) {
+    if (urlValue && !isFetching) {
       const match = urlValue.match(/(?:[/-]|chapter(?:-|_))(\d+(?:\.\d+)?)(?=[/?#]|$)/i);
       if (match && match[1]) {
         const chapterNumber = parseFloat(match[1]);
@@ -145,7 +149,40 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
         }
       }
     }
-  }, [urlValue, form]);
+  }, [urlValue, form, isFetching]);
+
+  const handleFetchMetadata = async () => {
+    const url = form.getValues('url');
+    if (!url || !z.string().url().safeParse(url).success) {
+      toast({
+        title: "Invalid URL",
+        description: "Please enter a valid URL to fetch metadata.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsFetching(true);
+    try {
+      const { title, chapter } = await extractMetadata({ url });
+      form.setValue('title', title, { shouldValidate: true });
+      form.setValue('chapter', chapter, { shouldValidate: true });
+      toast({
+        title: "Metadata Extracted!",
+        description: "Title and chapter have been filled in.",
+      });
+    } catch (error) {
+      console.error("Failed to fetch metadata:", error);
+      toast({
+        title: "Extraction Failed",
+        description: "Could not automatically extract metadata. Please fill in the details manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
 
   const handleFormSubmit = (values: BookmarkFormValues) => {
     const reminderDate = values.reminderDays && values.reminderDays > 0
@@ -251,6 +288,27 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
                         )}
                     />
                     <FormField
+                        control={form.control}
+                        name="url"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Chapter URL</FormLabel>
+                                <div className="flex gap-2">
+                                <FormControl>
+                                    <Input placeholder="https://.../chapter-123" {...field} />
+                                </FormControl>
+                                <Button type="button" variant="outline" size="icon" onClick={handleFetchMetadata} disabled={isFetching} aria-label="Fetch metadata">
+                                    {isFetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                                </Button>
+                                </div>
+                            <FormDescription>
+                                Enter a URL and click the ✨ button to auto-fill details.
+                            </FormDescription>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
                     control={form.control}
                     name="title"
                     render={({ field }) => (
@@ -278,22 +336,6 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
                             <FormMessage />
                             </FormItem>
                         )}
-                    />
-                    <FormField
-                    control={form.control}
-                    name="url"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Chapter URL</FormLabel>
-                        <FormControl>
-                            <Input placeholder="https://.../chapter-123" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                            The chapter number will be detected automatically.
-                        </FormDescription>
-                        <FormMessage />
-                        </FormItem>
-                    )}
                     />
                     <div className="grid grid-cols-2 gap-4">
                         <FormField

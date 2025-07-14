@@ -27,12 +27,13 @@ import { Reorder } from 'framer-motion';
 interface BookmarkListProps {
   bookmarks: Bookmark[];
   setBookmarks: React.Dispatch<React.SetStateAction<Bookmark[]>>;
+  allBookmarks: Bookmark[];
   readingStatuses: ReadingStatus[];
   sortPresets: SortPreset[];
   setSortPresets: React.Dispatch<React.SetStateAction<SortPreset[]>>;
   folders: Folder[];
   onDelete: (ids: string[]) => void;
-  onToggleFavorite: (id: string) => void;
+  toggleFavorite: (id: string) => void;
   onTogglePinned: (id: string) => void;
   onUpdateChapter: (id: string, newChapter: number) => void;
   onUpdateStatus: (ids: string[], statusId: string) => void;
@@ -48,12 +49,13 @@ interface BookmarkListProps {
 export default function BookmarkList({ 
     bookmarks, 
     setBookmarks,
+    allBookmarks,
     readingStatuses, 
     sortPresets,
     setSortPresets,
     folders,
     onDelete, 
-    onToggleFavorite, 
+    toggleFavorite, 
     onTogglePinned,
     onUpdateChapter, 
     onUpdateStatus, 
@@ -167,7 +169,8 @@ export default function BookmarkList({
 
     if (searchTerm) {
         filtered = filtered.filter(bookmark =>
-            bookmark.title.toLowerCase().includes(searchTerm.toLowerCase())
+            (bookmark.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (bookmark.alias?.toLowerCase().includes(searchTerm.toLowerCase()))
         );
     }
 
@@ -212,7 +215,7 @@ export default function BookmarkList({
   const handleReorder = (reorderedBookmarks: Bookmark[]) => {
     setLocalBookmarks(reorderedBookmarks); // Update local state for smooth animation
     // Update the main bookmarks state with new manualOrder values
-    const updatedBookmarks = bookmarks.map(bookmark => {
+    const updatedBookmarks = allBookmarks.map(bookmark => {
       const newIndex = reorderedBookmarks.findIndex(b => b.id === bookmark.id);
       if (newIndex !== -1) {
         return { ...bookmark, manualOrder: newIndex };
@@ -273,7 +276,7 @@ export default function BookmarkList({
     const newPreset: SortPreset = {
       id: Date.now().toString(),
       name: presetName,
-      settings: { searchTerm, sortOrder, selectedTags, showFavorites, statusFilter, layout, isCompact }
+      settings: { searchTerm, sortOrder, selectedTags, showFavorites, statusFilter, layout, isCompact, ratingFilter }
     };
     setSortPresets(prev => [...prev, newPreset]);
     toast({ title: `Preset "${presetName}" saved` });
@@ -290,6 +293,7 @@ export default function BookmarkList({
     setStatusFilter(settings.statusFilter);
     setLayout(settings.layout);
     setIsCompact(settings.isCompact);
+    setRatingFilter(settings.ratingFilter || 0)
     toast({ title: `Preset "${preset.name}" applied` });
   };
 
@@ -667,7 +671,7 @@ export default function BookmarkList({
                   bookmark={bookmark}
                   status={statusesById[bookmark.statusId]}
                   onEdit={handleEdit} 
-                  onToggleFavorite={onToggleFavorite}
+                  onToggleFavorite={toggleFavorite}
                   onTogglePinned={onTogglePinned}
                   onUpdateChapter={onUpdateChapter}
                   onDelete={onDelete}
@@ -681,7 +685,7 @@ export default function BookmarkList({
                   bookmark={bookmark} 
                   status={statusesById[bookmark.statusId]}
                   onEdit={handleEdit} 
-                  onToggleFavorite={onToggleFavorite}
+                  onToggleFavorite={toggleFavorite}
                   onTogglePinned={onTogglePinned}
                   onUpdateChapter={onUpdateChapter}
                   onDelete={onDelete}
