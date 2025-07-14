@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useState } from 'react';
+import Image from 'next/image';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -26,12 +27,14 @@ import {
 import { Input } from "@/components/ui/input"
 import type { Bookmark } from "@/types";
 import { Badge } from "./ui/badge";
-import { X } from "lucide-react";
+import { X, Upload } from "lucide-react";
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title cannot be empty." }),
   url: z.string().url({ message: "Please enter a valid URL." }),
+  chapter: z.coerce.number().min(0).optional(),
   tags: z.array(z.string()).optional(),
+  coverImage: z.string().optional(),
 });
 
 type BookmarkFormValues = z.infer<typeof formSchema>;
@@ -45,37 +48,47 @@ interface BookmarkDialogProps {
 
 export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: BookmarkDialogProps) {
   const [tagInput, setTagInput] = useState('');
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const form = useForm<BookmarkFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       url: "",
+      chapter: 0,
       tags: [],
+      coverImage: "",
     },
   });
 
-  // Watch for changes in the bookmark prop to reset the form
   React.useEffect(() => {
     if (bookmark) {
       form.reset({
         title: bookmark.title,
         url: bookmark.url,
+        chapter: bookmark.chapter || 0,
         tags: bookmark.tags || [],
+        coverImage: bookmark.coverImage || "",
       });
+      setCoverPreview(bookmark.coverImage || null);
     } else {
       form.reset({
         title: "",
         url: "",
+        chapter: 0,
         tags: [],
+        coverImage: "",
       });
+      setCoverPreview(null);
     }
-  }, [bookmark, form]);
+  }, [bookmark, form, open]); // Added open to reset on reopen
 
   const handleFormSubmit = (values: BookmarkFormValues) => {
     onSubmit(values, bookmark?.id);
     onOpenChange(false);
     form.reset();
+    setCoverPreview(null);
   };
   
   const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -94,10 +107,24 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
     const currentTags = form.getValues('tags') || [];
     form.setValue('tags', currentTags.filter(tag => tag !== tagToRemove));
   };
+  
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        form.setValue('coverImage', result);
+        setCoverPreview(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{bookmark ? 'Edit Bookmark' : 'Add New Bookmark'}</DialogTitle>
           <DialogDescription>
@@ -106,6 +133,41 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+             <FormField
+                control={form.control}
+                name="coverImage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cover Image</FormLabel>
+                    <FormControl>
+                        <div className="w-full">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                ref={fileInputRef}
+                                onChange={handleCoverImageChange}
+                                className="hidden"
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <Upload className="mr-2 h-4 w-4" />
+                                Upload Image
+                            </Button>
+                        </div>
+                    </FormControl>
+                    {coverPreview && (
+                        <div className="mt-4 relative w-32 h-48 mx-auto rounded-md overflow-hidden">
+                           <Image src={coverPreview} alt="Cover preview" layout="fill" objectFit="cover" />
+                        </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+            />
             <FormField
               control={form.control}
               name="title"
@@ -132,6 +194,19 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
                 </FormItem>
               )}
             />
+             <FormField
+                control={form.control}
+                name="chapter"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Chapter</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="Current chapter" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             <FormField
               control={form.control}
               name="tags"
@@ -150,7 +225,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
                         {field.value?.map((tag) => (
                         <Badge key={tag} variant="secondary" className="flex items-center gap-1">
                             {tag}
-                            <button onClick={() => removeTag(tag)} className="rounded-full hover:bg-muted-foreground/20">
+                            <button type="button" onClick={() => removeTag(tag)} className="rounded-full hover:bg-muted-foreground/20">
                                 <X className="w-3 h-3"/>
                             </button>
                         </Badge>

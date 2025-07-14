@@ -5,6 +5,8 @@ export interface Bookmark {
   lastUpdated: string;
   tags?: string[];
   isFavorite: boolean;
+  coverImage?: string; // Base64 encoded image data URL
+  chapter?: number;
 }
 
 export type SortOrder = 'lastUpdatedDesc' | 'lastUpdatedAsc' | 'titleAsc' | 'titleDesc';

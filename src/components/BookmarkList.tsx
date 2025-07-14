@@ -27,10 +27,11 @@ interface BookmarkListProps {
   onDelete: (ids: string[]) => void;
   onEdit: (bookmark: Bookmark) => void;
   onToggleFavorite: (id: string) => void;
+  onUpdateChapter: (id: string, newChapter: number) => void;
   allTags: string[];
 }
 
-export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavorite, allTags }: BookmarkListProps) {
+export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavorite, onUpdateChapter, allTags }: BookmarkListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("lastUpdatedDesc");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -202,7 +203,7 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredAndSortedBookmarks.map((bookmark) => (
             <BookmarkCard 
               key={bookmark.id} 
@@ -210,6 +211,7 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
               onDelete={onDelete} 
               onEdit={onEdit} 
               onToggleFavorite={onToggleFavorite}
+              onUpdateChapter={onUpdateChapter}
               isSelected={selectedBookmarks.includes(bookmark.id)}
               onSelectionChange={handleSelectionChange}
             />

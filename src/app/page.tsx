@@ -54,6 +54,10 @@ export default function Home() {
     setBookmarks(prev => prev.map(b => b.id === id ? { ...b, isFavorite: !b.isFavorite } : b));
   };
   
+  const updateChapter = (id: string, newChapter: number) => {
+    setBookmarks(prev => prev.map(b => b.id === id ? { ...b, chapter: newChapter, lastUpdated: new Date().toISOString() } : b));
+  };
+
   const handleEdit = (bookmark: Bookmark) => {
     setEditingBookmark(bookmark);
     setDialogOpen(true);
@@ -128,6 +132,7 @@ export default function Home() {
                 onDelete={deleteBookmarks}
                 onEdit={handleEdit}
                 onToggleFavorite={toggleFavorite}
+                onUpdateChapter={updateChapter}
                 allTags={allTags}
               />
             )}
