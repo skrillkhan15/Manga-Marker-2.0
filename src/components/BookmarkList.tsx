@@ -373,5 +373,3 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
     </div>
   );
 }
-
-    
