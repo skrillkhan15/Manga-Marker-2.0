@@ -33,15 +33,6 @@ import type { Bookmark, ReadingStatus } from "@/types";
 import { Badge } from "./ui/badge";
 import { X, Upload } from "lucide-react";
 
-const readingStatuses: ReadingStatus[] = ['reading', 'completed', 'on-hold', 'dropped', 'plan-to-read'];
-const statusLabels: Record<ReadingStatus, string> = {
-  'reading': 'Reading',
-  'completed': 'Completed',
-  'on-hold': 'On Hold',
-  'dropped': 'Dropped',
-  'plan-to-read': 'Plan to Read',
-};
-
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title cannot be empty." }),
   url: z.string().url({ message: "Please enter a valid URL." }),
@@ -49,7 +40,7 @@ const formSchema = z.object({
   totalChapters: z.coerce.number().min(0).optional(),
   tags: z.array(z.string()).optional(),
   coverImage: z.string().optional(),
-  status: z.enum(readingStatuses),
+  statusId: z.string({ required_error: "Please select a status." }),
   notes: z.string().optional(),
 });
 
@@ -58,11 +49,12 @@ type BookmarkFormValues = z.infer<typeof formSchema>;
 interface BookmarkDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (data: BookmarkFormValues, id?: string) => void;
+    onSubmit: (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite'>, id?: string) => void;
     bookmark: Bookmark | null;
+    readingStatuses: ReadingStatus[];
 }
 
-export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: BookmarkDialogProps) {
+export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark, readingStatuses }: BookmarkDialogProps) {
   const [tagInput, setTagInput] = useState('');
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -76,7 +68,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
       totalChapters: 0,
       tags: [],
       coverImage: "",
-      status: "plan-to-read",
+      statusId: readingStatuses[0]?.id || "plan-to-read",
       notes: "",
     },
   });
@@ -90,7 +82,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
         totalChapters: bookmark.totalChapters || 0,
         tags: bookmark.tags || [],
         coverImage: bookmark.coverImage || "",
-        status: bookmark.status || "plan-to-read",
+        statusId: bookmark.statusId || readingStatuses[0]?.id,
         notes: bookmark.notes || "",
       });
       setCoverPreview(bookmark.coverImage || null);
@@ -102,12 +94,12 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
         totalChapters: 0,
         tags: [],
         coverImage: "",
-        status: "plan-to-read",
+        statusId: readingStatuses.find(s => s.id === 'plan-to-read')?.id || readingStatuses[0]?.id,
         notes: "",
       });
       setCoverPreview(null);
     }
-  }, [bookmark, form, open]);
+  }, [bookmark, form, open, readingStatuses]);
 
   const urlValue = form.watch('url');
 
@@ -267,11 +259,11 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
              </div>
              <FormField
                     control={form.control}
-                    name="status"
+                    name="statusId"
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Status</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select a status" />
@@ -279,8 +271,8 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
                                 </FormControl>
                                 <SelectContent>
                                     {readingStatuses.map(status => (
-                                        <SelectItem key={status} value={status}>
-                                            {statusLabels[status]}
+                                        <SelectItem key={status.id} value={status.id}>
+                                            {status.label}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

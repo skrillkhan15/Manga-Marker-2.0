@@ -20,6 +20,7 @@ import { Progress } from './ui/progress';
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
+  status?: ReadingStatus;
   onEdit: (bookmark: Bookmark) => void;
   onToggleFavorite: (id: string) => void;
   onUpdateChapter: (id: string, newChapter: number) => void;
@@ -27,15 +28,7 @@ interface BookmarkCardProps {
   onSelectionChange: (id: string, isSelected: boolean) => void;
 }
 
-const statusConfig: Record<ReadingStatus, { label: string, color: string, icon: React.ReactNode }> = {
-    'reading': { label: 'Reading', color: 'bg-blue-500', icon: <BookOpen className="w-3 h-3" /> },
-    'completed': { label: 'Completed', color: 'bg-green-500', icon: <Star className="w-3 h-3" /> },
-    'on-hold': { label: 'On Hold', color: 'bg-yellow-500', icon: <Minus className="w-3 h-3" /> },
-    'dropped': { label: 'Dropped', color: 'bg-red-500', icon: <X className="w-3 h-3" /> },
-    'plan-to-read': { label: 'Plan to Read', color: 'bg-gray-500', icon: <List className="w-3 h-3" /> }
-};
-
-export default function BookmarkCard({ bookmark, onEdit, onToggleFavorite, onUpdateChapter, isSelected, onSelectionChange }: BookmarkCardProps) {
+export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, isSelected, onSelectionChange }: BookmarkCardProps) {
     const [lastUpdatedText, setLastUpdatedText] = useState('');
 
     useEffect(() => {
@@ -59,8 +52,6 @@ export default function BookmarkCard({ bookmark, onEdit, onToggleFavorite, onUpd
        }
     }, [bookmark.lastUpdated]);
     
-    const currentStatus = statusConfig[bookmark.status] || statusConfig['plan-to-read'];
-
     const progress = useMemo(() => {
       if (bookmark.totalChapters && bookmark.totalChapters > 0) {
         return Math.round(((bookmark.chapter || 0) / bookmark.totalChapters) * 100);
@@ -88,14 +79,16 @@ export default function BookmarkCard({ bookmark, onEdit, onToggleFavorite, onUpd
                     objectFit="cover"
                     className="bg-muted"
                 />
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <div className={`absolute bottom-0 left-0 right-0 h-1 ${currentStatus.color}`}></div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>{currentStatus.label}</p>
-                    </TooltipContent>
-                </Tooltip>
+                {status && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className="absolute bottom-0 left-0 right-0 h-1" style={{ backgroundColor: status.color }}></div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{status.label}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                )}
              </div>
 
             <div className="flex-1">

@@ -1,8 +1,12 @@
 
-export type ReadingStatus = 'reading' | 'completed' | 'on-hold' | 'dropped' | 'plan-to-read';
+export interface ReadingStatus {
+  id: string;
+  label: string;
+  color: string; // hex color
+}
 
 export interface Bookmark {
-  id: string;
+  id:string;
   title: string;
   url: string;
   lastUpdated: string;
@@ -11,7 +15,7 @@ export interface Bookmark {
   coverImage?: string; // Base64 encoded image data URL
   chapter?: number;
   totalChapters?: number;
-  status: ReadingStatus;
+  statusId: string; // Corresponds to ReadingStatus.id
   notes?: string;
 }
 

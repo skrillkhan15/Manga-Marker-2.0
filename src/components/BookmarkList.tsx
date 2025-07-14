@@ -8,8 +8,6 @@ import { BookOpenCheck, SearchX, Trash2, CheckCircle2, ChevronDown, Filter, Layo
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Button } from './ui/button';
-import { ToastAction } from "@/components/ui/toast";
-import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Checkbox } from './ui/checkbox';
@@ -20,31 +18,30 @@ import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 
 interface BookmarkListProps {
   bookmarks: Bookmark[];
+  readingStatuses: ReadingStatus[];
   onDelete: (ids: string[]) => void;
   onEdit: (bookmark: Bookmark) => void;
   onToggleFavorite: (id: string) => void;
   onUpdateChapter: (id: string, newChapter: number) => void;
-  onUpdateStatus: (ids: string[], status: ReadingStatus) => void;
+  onUpdateStatus: (ids: string[], statusId: string) => void;
   allTags: string[];
 }
 
-const readingStatuses: ReadingStatus[] = ['reading', 'completed', 'on-hold', 'dropped', 'plan-to-read'];
-const statusLabels: Record<ReadingStatus, string> = {
-  'reading': 'Reading',
-  'completed': 'Completed',
-  'on-hold': 'On Hold',
-  'dropped': 'Dropped',
-  'plan-to-read': 'Plan to Read',
-};
-
-export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavorite, onUpdateChapter, onUpdateStatus, allTags }: BookmarkListProps) {
+export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onEdit, onToggleFavorite, onUpdateChapter, onUpdateStatus, allTags }: BookmarkListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("lastUpdatedDesc");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedBookmarks, setSelectedBookmarks] = useState<string[]>([]);
   const [showFavorites, setShowFavorites] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<ReadingStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [layout, setLayout] = useState<ViewLayout>('grid');
+
+  const statusesById = useMemo(() => {
+    return readingStatuses.reduce((acc, status) => {
+      acc[status.id] = status;
+      return acc;
+    }, {} as Record<string, ReadingStatus>);
+  }, [readingStatuses]);
 
   const handleSelectionChange = (id: string, isSelected: boolean) => {
     setSelectedBookmarks(prev => 
@@ -60,7 +57,7 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
     }
     
     if (statusFilter !== 'all') {
-        filtered = filtered.filter(b => b.status === statusFilter);
+        filtered = filtered.filter(b => b.statusId === statusFilter);
     }
 
     if (searchTerm) {
@@ -111,8 +108,8 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
     );
   };
   
-  const handleUpdateStatus = (status: ReadingStatus) => {
-    onUpdateStatus(selectedBookmarks, status);
+  const handleUpdateStatus = (statusId: string) => {
+    onUpdateStatus(selectedBookmarks, statusId);
     setSelectedBookmarks([]);
   };
 
@@ -129,6 +126,8 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
   }
 
   const isAnyFilterActive = showFavorites || statusFilter !== 'all' || selectedTags.length > 0;
+
+  const currentStatusFilterLabel = statusFilter !== 'all' ? statusesById[statusFilter]?.label : '';
 
   return (
     <div className="space-y-6">
@@ -197,15 +196,15 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-56 p-0">
-                                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as ReadingStatus | 'all')}>
+                                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v)}>
                                     <SelectTrigger className="w-full border-0 focus:ring-0">
                                         <SelectValue placeholder="Filter by status" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All Statuses</SelectItem>
                                         {readingStatuses.map(status => (
-                                            <SelectItem key={status} value={status}>
-                                                {statusLabels[status]}
+                                            <SelectItem key={status.id} value={status.id}>
+                                                {status.label}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -252,9 +251,9 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
                 </button>
             </Badge>
           )}
-          {statusFilter !== 'all' && (
+          {statusFilter !== 'all' && currentStatusFilterLabel && (
               <Badge variant="secondary" className="pl-2 pr-1 cursor-pointer hover:bg-muted" onClick={() => setStatusFilter('all')}>
-                {statusLabels[statusFilter]}
+                {currentStatusFilterLabel}
                 <button className="ml-1 rounded-full hover:bg-background/50 p-0.5">
                     <X className="w-3 h-3"/>
                 </button>
@@ -294,8 +293,8 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                         {readingStatuses.map(status => (
-                            <DropdownMenuItem key={status} onSelect={() => handleUpdateStatus(status)}>
-                                {statusLabels[status]}
+                            <DropdownMenuItem key={status.id} onSelect={() => handleUpdateStatus(status.id)}>
+                                {status.label}
                             </DropdownMenuItem>
                         ))}
                     </DropdownMenuContent>
@@ -327,7 +326,8 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
           {filteredAndSortedBookmarks.map((bookmark) => (
             <BookmarkCard 
               key={bookmark.id} 
-              bookmark={bookmark} 
+              bookmark={bookmark}
+              status={statusesById[bookmark.statusId]}
               onEdit={onEdit} 
               onToggleFavorite={onToggleFavorite}
               onUpdateChapter={onUpdateChapter}
@@ -342,6 +342,7 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
             <BookmarkListItem 
               key={bookmark.id} 
               bookmark={bookmark} 
+              status={statusesById[bookmark.statusId]}
               onEdit={onEdit} 
               onToggleFavorite={onToggleFavorite}
               onUpdateChapter={onUpdateChapter}

@@ -7,16 +7,17 @@ import { BookMarked, Star, Tag, TrendingUp, History, Heart } from "lucide-react"
 import { useMemo } from "react";
 import Image from 'next/image';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
-import { ChartContainer, ChartTooltipContent } from "./ui/chart";
+import { ChartContainer, ChartTooltipContent, ChartConfig } from "./ui/chart";
 import { Button } from "./ui/button";
 
 interface DashboardProps {
     bookmarks: Bookmark[];
+    readingStatuses: ReadingStatus[];
 }
 
-export default function Dashboard({ bookmarks }: DashboardProps) {
+export default function Dashboard({ bookmarks, readingStatuses }: DashboardProps) {
 
-    const { stats, recentlyUpdated, favoritesList } = useMemo(() => {
+    const { stats, recentlyUpdated, favoritesList, chartConfig } = useMemo(() => {
         const total = bookmarks.length;
         const favoritesCount = bookmarks.filter(b => b.isFavorite).length;
         const tags = new Set<string>();
@@ -31,33 +32,30 @@ export default function Dashboard({ bookmarks }: DashboardProps) {
         const favoritesList = bookmarks.filter(b => b.isFavorite).slice(0, 5);
 
         const statusCounts = bookmarks.reduce((acc, b) => {
-            acc[b.status] = (acc[b.status] || 0) + 1;
+            acc[b.statusId] = (acc[b.statusId] || 0) + 1;
             return acc;
-        }, {} as Record<ReadingStatus, number>);
+        }, {} as Record<string, number>);
         
-        const chartData = [
-            { name: "Reading", value: statusCounts.reading || 0, fill: "var(--color-reading)" },
-            { name: "Completed", value: statusCounts.completed || 0, fill: "var(--color-completed)" },
-            { name: "On Hold", value: statusCounts['on-hold'] || 0, fill: "var(--color-on-hold)" },
-            { name: "Dropped", value: statusCounts.dropped || 0, fill: "var(--color-dropped)" },
-            { name: "Plan to Read", value: statusCounts['plan-to-read'] || 0, fill: "var(--color-plan-to-read)" },
-        ];
+        const chartData = readingStatuses.map(status => ({
+            name: status.label,
+            value: statusCounts[status.id] || 0,
+            fill: status.color,
+        }));
+        
+        const chartConfig = readingStatuses.reduce((acc, status) => {
+            acc[status.label] = { label: status.label, color: status.color };
+            return acc;
+        }, {} as ChartConfig);
+
 
         return { 
             stats: { total, favorites: favoritesCount, uniqueTags, latestUpdate, chartData },
             recentlyUpdated,
-            favoritesList
+            favoritesList,
+            chartConfig
         };
-    }, [bookmarks]);
+    }, [bookmarks, readingStatuses]);
 
-    const chartConfig = {
-        value: { label: "Bookmarks" },
-        reading: { label: "Reading", color: "hsl(var(--chart-1))" },
-        completed: { label: "Completed", color: "hsl(var(--chart-2))" },
-        "on-hold": { label: "On Hold", color: "hsl(var(--chart-3))" },
-        dropped: { label: "Dropped", color: "hsl(var(--chart-4))" },
-        "plan-to-read": { label: "Plan to Read", color: "hsl(var(--chart-5))" },
-    }
 
     const QuickAccessList = ({ bookmarks }: { bookmarks: Bookmark[] }) => (
         <div className="space-y-4">

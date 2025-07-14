@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
-import { Edit, Star, Tag, Minus, Plus, BookOpen, StickyNote, X, List } from 'lucide-react';
+import { Edit, Star, Tag, Minus, Plus, BookOpen, StickyNote, X, List, Palette } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import type { Bookmark, ReadingStatus } from "@/types";
 import { Checkbox } from './ui/checkbox';
@@ -14,6 +14,7 @@ import { useMemo } from 'react';
 
 interface BookmarkListItemProps {
   bookmark: Bookmark;
+  status?: ReadingStatus;
   onEdit: (bookmark: Bookmark) => void;
   onToggleFavorite: (id: string) => void;
   onUpdateChapter: (id: string, newChapter: number) => void;
@@ -21,17 +22,8 @@ interface BookmarkListItemProps {
   onSelectionChange: (id: string, isSelected: boolean) => void;
 }
 
-const statusConfig: Record<ReadingStatus, { label: string, icon: React.ReactNode, className: string }> = {
-    'reading': { label: 'Reading', icon: <BookOpen className="w-4 h-4" />, className: 'text-blue-500' },
-    'completed': { label: 'Completed', icon: <Star className="w-4 h-4" />, className: 'text-green-500' },
-    'on-hold': { label: 'On Hold', icon: <Minus className="w-4 h-4" />, className: 'text-yellow-500' },
-    'dropped': { label: 'Dropped', icon: <X className="w-4 h-4" />, className: 'text-red-500' },
-    'plan-to-read': { label: 'Plan to Read', icon: <List className="w-4 h-4" />, className: 'text-gray-500' }
-};
-
-export default function BookmarkListItem({ bookmark, onEdit, onToggleFavorite, onUpdateChapter, isSelected, onSelectionChange }: BookmarkListItemProps) {
+export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, isSelected, onSelectionChange }: BookmarkListItemProps) {
   const lastUpdatedText = formatDistanceToNow(new Date(bookmark.lastUpdated), { addSuffix: true });
-  const currentStatus = statusConfig[bookmark.status] || statusConfig['plan-to-read'];
   const progress = useMemo(() => {
     if (bookmark.totalChapters && bookmark.totalChapters > 0) {
       return Math.round(((bookmark.chapter || 0) / bookmark.totalChapters) * 100);
@@ -95,14 +87,16 @@ export default function BookmarkListItem({ bookmark, onEdit, onToggleFavorite, o
                   </Tooltip>
                 )}
                 
-                <Tooltip>
-                    <TooltipTrigger className={`flex items-center ${currentStatus.className}`}>
-                        {currentStatus.icon}
-                    </TooltipTrigger>
-                    <TooltipContent>
-                       {currentStatus.label}
-                    </TooltipContent>
-                </Tooltip>
+                {status && (
+                    <Tooltip>
+                        <TooltipTrigger className="flex items-center">
+                           <Palette className="w-4 h-4" style={{ color: status.color }} />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                           {status.label}
+                        </TooltipContent>
+                    </Tooltip>
+                )}
 
                 {bookmark.notes && (
                     <Tooltip>

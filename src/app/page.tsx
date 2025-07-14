@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import type { Bookmark, View } from "@/types";
+import type { Bookmark, View, ReadingStatus } from "@/types";
 import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarTrigger, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { BookMarked, LayoutDashboard, List, Loader2, Settings } from 'lucide-react';
@@ -15,9 +15,17 @@ import { BookmarkDialog } from '@/components/BookmarkDialog';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
 
+const defaultStatuses: ReadingStatus[] = [
+    { id: 'reading', label: 'Reading', color: '#3b82f6' },
+    { id: 'completed', label: 'Completed', color: '#22c55e' },
+    { id: 'on-hold', label: 'On Hold', color: '#eab308' },
+    { id: 'dropped', label: 'Dropped', color: '#ef4444' },
+    { id: 'plan-to-read', label: 'Plan to Read', color: '#6b7280' }
+];
 
 export default function Home() {
   const [bookmarks, setBookmarks] = useLocalStorage<Bookmark[]>("manga-bookmarks", []);
+  const [readingStatuses, setReadingStatuses] = useLocalStorage<ReadingStatus[]>("manga-statuses", defaultStatuses);
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
@@ -81,9 +89,9 @@ export default function Home() {
     setBookmarks(prev => prev.map(b => b.id === id ? { ...b, chapter: newChapter >= 0 ? newChapter : 0, lastUpdated: new Date().toISOString() } : b));
   };
 
-  const updateBookmarkStatus = (ids: string[], status: Bookmark['status']) => {
+  const updateBookmarkStatus = (ids: string[], statusId: string) => {
     const now = new Date().toISOString();
-    setBookmarks(prev => prev.map(b => ids.includes(b.id) ? { ...b, status, lastUpdated: now } : b));
+    setBookmarks(prev => prev.map(b => ids.includes(b.id) ? { ...b, statusId, lastUpdated: now } : b));
   }
 
   const handleEdit = (bookmark: Bookmark) => {
@@ -159,10 +167,11 @@ export default function Home() {
                 </div>
             ) : (
                 <>
-                    {activeView === 'dashboard' && <Dashboard bookmarks={bookmarks} />}
+                    {activeView === 'dashboard' && <Dashboard bookmarks={bookmarks} readingStatuses={readingStatuses} />}
                     {activeView === 'list' && (
                     <BookmarkList 
                         bookmarks={bookmarks}
+                        readingStatuses={readingStatuses}
                         onDelete={deleteBookmarks}
                         onEdit={handleEdit}
                         onToggleFavorite={toggleFavorite}
@@ -171,7 +180,7 @@ export default function Home() {
                         allTags={allTags}
                     />
                     )}
-                    {activeView === 'settings' && <SettingsView bookmarks={bookmarks} setBookmarks={setBookmarks} />}
+                    {activeView === 'settings' && <SettingsView bookmarks={bookmarks} setBookmarks={setBookmarks} readingStatuses={readingStatuses} setReadingStatuses={setReadingStatuses}/>}
                 </>
             )}
         </main>
@@ -181,6 +190,7 @@ export default function Home() {
         onOpenChange={handleDialogClose}
         onSubmit={addOrUpdateBookmark}
         bookmark={editingBookmark}
+        readingStatuses={readingStatuses}
       />
     </SidebarProvider>
   );
