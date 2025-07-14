@@ -1,11 +1,11 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { Trash2, ArrowUpRight } from 'lucide-react';
 import {
   Card,
-  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
@@ -32,10 +32,18 @@ interface BookmarkCardProps {
 }
 
 export default function BookmarkCard({ bookmark, onDelete }: BookmarkCardProps) {
-  const [lastUpdatedText, setLastUpdatedText] = useState('');
+  const [lastUpdatedText, setLastUpdatedText] = useState(
+    format(new Date(bookmark.lastUpdated), 'PPP')
+  );
 
   useEffect(() => {
+    const timer = setInterval(() => {
+      setLastUpdatedText(formatDistanceToNow(new Date(bookmark.lastUpdated), { addSuffix: true }));
+    }, 1000 * 60); // Update every minute
+
     setLastUpdatedText(formatDistanceToNow(new Date(bookmark.lastUpdated), { addSuffix: true }));
+
+    return () => clearInterval(timer);
   }, [bookmark.lastUpdated]);
   
   return (
