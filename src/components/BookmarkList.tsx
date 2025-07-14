@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useMemo } from 'react';
 import type { Bookmark, SortOrder, ViewLayout, ReadingStatus } from "@/types";
@@ -371,3 +372,5 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
     </div>
   );
 }
+
+    
