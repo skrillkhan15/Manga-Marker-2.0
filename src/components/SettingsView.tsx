@@ -103,8 +103,10 @@ export default function SettingsView({
         if (backupTime) {
             setAutoBackupTimestamp(new Date(parseInt(backupTime, 10)).toLocaleString());
         }
+    }, []);
 
-        // Apply theme class on mount
+    useEffect(() => {
+        // Apply theme class on mount and when appTheme changes
         document.body.classList.forEach(className => {
             if (className.startsWith('theme-')) {
                 document.body.classList.remove(className);
@@ -113,7 +115,6 @@ export default function SettingsView({
         if (appTheme !== 'system' && appTheme !== 'light' && appTheme !== 'dark') {
              document.body.classList.add(`theme-${appTheme}`);
         }
-
     }, [appTheme]);
 
     const handleFontSizeChange = (value: number[]) => {

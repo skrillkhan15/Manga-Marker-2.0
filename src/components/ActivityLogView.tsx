@@ -82,7 +82,7 @@ export default function ActivityLogView({ logs, onClearLog }: ActivityLogViewPro
                          <div className="flex flex-col items-center justify-center text-center p-10 border-2 border-dashed rounded-lg h-64 bg-muted/20">
                             <History className="w-16 h-16 text-muted-foreground mb-4" />
                             <h2 className="text-xl font-semibold">No Activity Yet</h2>
-                            <p className="text-muted-foreground">Start using the app and your actions will appear here.</p>
+                            <p className="text-muted-foreground">Your actions will appear here once you start using the app.</p>
                         </div>
                     )}
                 </CardContent>

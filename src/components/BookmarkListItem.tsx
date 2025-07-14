@@ -10,7 +10,7 @@ import { Checkbox } from './ui/checkbox';
 import { Badge } from './ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { Progress } from './ui/progress';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SwipeArea } from './SwipeArea';
 import { useToast } from '@/hooks/use-toast';
@@ -34,10 +34,23 @@ interface BookmarkListItemProps {
 }
 
 export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFavorite, onTogglePinned, onUpdateChapter, onDelete, isSelected, onSelectionChange, isCompact, isManualSortActive = false }: BookmarkListItemProps) {
-  const lastUpdatedText = formatDistanceToNow(new Date(bookmark.lastUpdated), { addSuffix: true });
+  const [lastUpdatedText, setLastUpdatedText] = useState('');
   const isMobile = useIsMobile();
   const { toast } = useToast();
   
+    useEffect(() => {
+        const updateText = () => {
+          try {
+            setLastUpdatedText(formatDistanceToNow(new Date(bookmark.lastUpdated), { addSuffix: true }));
+          } catch (e) {
+             setLastUpdatedText('a few seconds ago');
+          }
+        };
+        updateText();
+        const timer = setInterval(updateText, 1000 * 60);
+        return () => clearInterval(timer);
+    }, [bookmark.lastUpdated]);
+
   const progress = useMemo(() => {
     if (bookmark.totalChapters && bookmark.totalChapters > 0) {
       return Math.round(((bookmark.chapter || 0) / bookmark.totalChapters) * 100);

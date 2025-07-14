@@ -585,7 +585,7 @@ export default function Home() {
                     allTags={allTags}
                     onRenameTag={renameTag}
                     onDeleteTag={deleteTag}
-                    auth={{ isLockEnabled, setIsLockEnabled, changePin, isPinSet, checkPin, resetApp }}
+                    auth={auth}
                     folders={folders}
                     setFolders={setFolders}
                     onResetStreak={resetStreak}

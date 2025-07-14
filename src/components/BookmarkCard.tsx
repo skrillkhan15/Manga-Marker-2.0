@@ -186,8 +186,8 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
             <div className="flex-1">
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <CardTitle className="text-lg leading-tight">
-                            <a href={bookmark.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                        <CardTitle asChild>
+                            <a href={bookmark.url} target="_blank" rel="noopener noreferrer" className="text-lg leading-tight hover:underline">
                                 {bookmark.alias || bookmark.title}
                             </a>
                         </CardTitle>
