@@ -138,7 +138,11 @@ export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFav
                 {status && (
                     <Tooltip>
                         <TooltipTrigger className="flex items-center">
-                           <Palette className="w-4 h-4" style={{ color: status.color }} />
+                           {status.icon ? (
+                             <span className="text-lg" style={{ color: status.color }}>{status.icon}</span>
+                           ) : (
+                             <Palette className="w-4 h-4" style={{ color: status.color }} />
+                           )}
                         </TooltipTrigger>
                         <TooltipContent>
                            {status.label}

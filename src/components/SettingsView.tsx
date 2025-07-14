@@ -63,6 +63,7 @@ export default function SettingsView({
     const [editingStatus, setEditingStatus] = useState<ReadingStatus | null>(null);
     const [newStatusLabel, setNewStatusLabel] = useState('');
     const [newStatusColor, setNewStatusColor] = useState('#888888');
+    const [newStatusIcon, setNewStatusIcon] = useState('');
     const [editingTag, setEditingTag] = useState<{ oldName: string; newName: string } | null>(null);
     const [fontSize, setFontSize] = useState(16);
     const [autoBackupTimestamp, setAutoBackupTimestamp] = useState<string | null>(null);
@@ -275,10 +276,11 @@ export default function SettingsView({
         }
         setReadingStatuses(prev => [
             ...prev,
-            { id: Date.now().toString(), label: newStatusLabel, color: newStatusColor }
+            { id: Date.now().toString(), label: newStatusLabel, color: newStatusColor, icon: newStatusIcon }
         ]);
         setNewStatusLabel('');
         setNewStatusColor('#888888');
+        setNewStatusIcon('');
     };
 
     const handleUpdateStatus = () => {
@@ -557,6 +559,12 @@ export default function SettingsView({
                             <div key={status.id} className="flex items-center gap-2 p-2 border rounded-lg">
                                 {editingStatus?.id === status.id ? (
                                     <>
+                                        <Input
+                                            value={editingStatus.icon || ''}
+                                            onChange={(e) => setEditingStatus(s => s ? {...s, icon: e.target.value.slice(0, 2)} : null)}
+                                            placeholder="🔥"
+                                            className="h-8 w-12 text-center"
+                                        />
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <Button variant="outline" size="icon" style={{ backgroundColor: editingStatus.color }} className="w-8 h-8 shrink-0">
@@ -571,13 +579,14 @@ export default function SettingsView({
                                             value={editingStatus.label}
                                             onChange={(e) => setEditingStatus(s => s ? {...s, label: e.target.value} : null)}
                                             onKeyDown={(e) => e.key === 'Enter' && handleUpdateStatus()}
-                                            className="h-8"
+                                            className="h-8 flex-1"
                                         />
                                         <Button size="icon" className="h-8 w-8" onClick={handleUpdateStatus}><Check className="w-4 h-4" /></Button>
                                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingStatus(null)}><X className="w-4 h-4" /></Button>
                                     </>
                                 ) : (
                                     <>
+                                        {status.icon && <span className="text-lg w-5 text-center">{status.icon}</span>}
                                         <div className="w-5 h-5 rounded-full border" style={{ backgroundColor: status.color }}></div>
                                         <span className="flex-1 font-medium">{status.label}</span>
                                         <Button variant="ghost" size="icon" onClick={() => setEditingStatus({...status})} className="w-8 h-8">
@@ -609,6 +618,12 @@ export default function SettingsView({
                     </div>
 
                     <div className="flex items-center gap-2 p-2 border rounded-lg border-dashed">
+                        <Input
+                            placeholder="🔥"
+                            value={newStatusIcon}
+                            onChange={(e) => setNewStatusIcon(e.target.value.slice(0, 2))}
+                            className="h-8 w-12 text-center"
+                        />
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button variant="outline" size="icon" style={{ backgroundColor: newStatusColor }} className="w-8 h-8 shrink-0">
@@ -624,7 +639,7 @@ export default function SettingsView({
                             value={newStatusLabel}
                             onChange={(e) => setNewStatusLabel(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleAddNewStatus()}
-                            className="h-8"
+                            className="h-8 flex-1"
                         />
                         <Button size="icon" className="h-8 w-8" onClick={handleAddNewStatus} disabled={!newStatusLabel.trim()}>
                             <Plus className="w-4 h-4" />

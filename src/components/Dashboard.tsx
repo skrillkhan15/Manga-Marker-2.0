@@ -40,10 +40,12 @@ export default function Dashboard({ bookmarks, readingStatuses }: DashboardProps
             name: status.label,
             value: statusCounts[status.id] || 0,
             fill: status.color,
+            icon: status.icon,
         }));
         
         const chartConfig = readingStatuses.reduce((acc, status) => {
-            acc[status.label] = { label: status.label, color: status.color };
+            const label = status.icon ? `${status.icon} ${status.label}` : status.label;
+            acc[status.label] = { label: label, color: status.color };
             return acc;
         }, {} as ChartConfig);
 
@@ -84,6 +86,18 @@ export default function Dashboard({ bookmarks, readingStatuses }: DashboardProps
             ))}
         </div>
     );
+
+    const CustomXAxisTick = ({ x, y, payload }: any) => {
+        const { value, icon } = payload.payload;
+        return (
+            <g transform={`translate(${x},${y})`}>
+                <text x={0} y={0} dy={16} textAnchor="middle" fill="#888888" fontSize={12}>
+                    {icon && <tspan className="text-lg" x={-10}>{icon}</tspan>}
+                    <tspan x={icon ? 5 : 0}>{value}</tspan>
+                </text>
+            </g>
+        );
+    };
 
     return (
         <div className="space-y-6">
@@ -177,7 +191,7 @@ export default function Dashboard({ bookmarks, readingStatuses }: DashboardProps
                     {bookmarks.length > 0 ? (
                         <ChartContainer config={chartConfig} className="h-64 w-full">
                             <BarChart accessibilityLayer data={stats.chartData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
-                                <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tick={<CustomXAxisTick />} />
                                 <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                                 <Tooltip
                                     cursor={false}

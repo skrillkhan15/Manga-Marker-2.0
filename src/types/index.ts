@@ -9,6 +9,7 @@ export interface ReadingStatus {
   id: string;
   label: string;
   color: string; // hex color
+  icon?: string; // For emoji or single character icon
 }
 
 export interface BookmarkHistory {
