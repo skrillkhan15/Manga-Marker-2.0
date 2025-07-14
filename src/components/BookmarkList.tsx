@@ -8,17 +8,8 @@ import { BookOpenCheck, SearchX, Trash2, CheckCircle2, ChevronDown, Filter, Layo
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Button } from './ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { ToastAction } from "@/components/ui/toast";
+import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Checkbox } from './ui/checkbox';
@@ -254,25 +245,25 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
         <div className="flex flex-wrap items-center gap-2 p-2 bg-muted/30 rounded-lg border">
           <span className="text-sm font-medium mr-2">Active filters:</span>
           {showFavorites && (
-              <Badge variant="secondary" className="pl-2 pr-1">
+              <Badge variant="secondary" className="pl-2 pr-1 cursor-pointer hover:bg-muted" onClick={() => setShowFavorites(false)}>
                 <Star className="w-3 h-3 mr-1" /> Favorites
-                <button onClick={() => setShowFavorites(false)} className="ml-1 rounded-full hover:bg-background/50 p-0.5">
+                <button className="ml-1 rounded-full hover:bg-background/50 p-0.5">
                     <X className="w-3 h-3"/>
                 </button>
             </Badge>
           )}
           {statusFilter !== 'all' && (
-              <Badge variant="secondary" className="pl-2 pr-1">
+              <Badge variant="secondary" className="pl-2 pr-1 cursor-pointer hover:bg-muted" onClick={() => setStatusFilter('all')}>
                 {statusLabels[statusFilter]}
-                <button onClick={() => setStatusFilter('all')} className="ml-1 rounded-full hover:bg-background/50 p-0.5">
+                <button className="ml-1 rounded-full hover:bg-background/50 p-0.5">
                     <X className="w-3 h-3"/>
                 </button>
             </Badge>
           )}
           {selectedTags.map(tag => (
-            <Badge key={tag} variant="secondary" className="pl-2 pr-1">
+            <Badge key={tag} variant="secondary" className="pl-2 pr-1 cursor-pointer hover:bg-muted" onClick={() => handleTagSelection(tag)}>
               {tag}
-              <button onClick={() => handleTagSelection(tag)} className="ml-1 rounded-full hover:bg-background/50 p-0.5">
+              <button className="ml-1 rounded-full hover:bg-background/50 p-0.5">
                 <X className="w-3 h-3"/>
               </button>
             </Badge>
