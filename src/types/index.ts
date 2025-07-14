@@ -98,3 +98,8 @@ export interface WeeklySummary {
   seriesUpdated: string[]; // Store bookmark IDs to count unique series
   startDate: string; // ISO string for when the week started
 }
+
+export interface DailySummary {
+  chaptersRead: number;
+  date: string; // ISO string for the current day
+}

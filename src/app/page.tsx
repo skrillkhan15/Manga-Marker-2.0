@@ -24,6 +24,8 @@ import { isPast, isToday, isYesterday, startOfDay } from 'date-fns';
 import { useActivityLog } from '@/hooks/use-activity-log';
 import ActivityLogView from '@/components/ActivityLogView';
 import { useWeeklySummary } from '@/hooks/use-weekly-summary';
+import { useDailySummary } from '@/hooks/use-daily-summary';
+import { MangaCounterWidget } from '@/components/MangaCounterWidget';
 
 const defaultStatuses: ReadingStatus[] = [
     { id: 'reading', label: 'Reading', color: '#3b82f6', icon: '📖' },
@@ -44,6 +46,7 @@ export default function Home() {
   const [lastStreakUpdate, setLastStreakUpdate] = useLocalStorage<string>("mangamarks-streak-last-update", "");
   const { activityLog, addLogEntry, clearLog } = useActivityLog();
   const { weeklySummary, incrementChapters, addSeriesUpdate, resetSummary } = useWeeklySummary();
+  const { dailySummary, incrementChaptersToday } = useDailySummary();
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -148,11 +151,12 @@ export default function Home() {
         let logDescription = `Updated "${updatedBookmark.title}".`;
         // Create more detailed log for specific changes
         if (existingBookmark.chapter !== updatedBookmark.chapter) {
-            logDescription = `Set chapter for "${updatedBookmark.title}" to ${updatedBookmark.chapter}.`;
-            // Track chapter changes for weekly summary
             const chapterDiff = (updatedBookmark.chapter || 0) - (existingBookmark.chapter || 0);
+            logDescription = `Set chapter for "${updatedBookmark.title}" to ${updatedBookmark.chapter}.`;
+            // Track chapter changes for summaries
             if (chapterDiff > 0) {
                 incrementChapters(chapterDiff);
+                incrementChaptersToday(chapterDiff);
             }
         } else if (existingBookmark.statusId !== updatedBookmark.statusId) {
             const oldStatus = readingStatuses.find(s => s.id === existingBookmark.statusId)?.label;
@@ -459,6 +463,8 @@ export default function Home() {
     }
     return bookmarks;
   }, [bookmarks, activeView, selectedFolderId]);
+  
+  const favoriteCount = useMemo(() => bookmarks.filter(b => b.isFavorite).length, [bookmarks]);
 
   if (!isMounted) {
     return (
@@ -577,6 +583,11 @@ export default function Home() {
                 )}
             </>
         </main>
+        <MangaCounterWidget
+            totalBookmarks={bookmarks.length}
+            favorites={favoriteCount}
+            chaptersReadToday={dailySummary.chaptersRead}
+        />
       </SidebarInset>
       <BookmarkDialog
         open={dialogOpen}
