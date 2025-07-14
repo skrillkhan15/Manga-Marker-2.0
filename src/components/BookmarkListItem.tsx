@@ -10,7 +10,7 @@ import { Checkbox } from './ui/checkbox';
 import { Badge } from './ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { Progress } from './ui/progress';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 
 interface BookmarkListItemProps {
   bookmark: Bookmark;
@@ -20,9 +20,10 @@ interface BookmarkListItemProps {
   onUpdateChapter: (id: string, newChapter: number) => void;
   isSelected: boolean;
   onSelectionChange: (id: string, isSelected: boolean) => void;
+  isCompact: boolean;
 }
 
-export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, isSelected, onSelectionChange }: BookmarkListItemProps) {
+export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, isSelected, onSelectionChange, isCompact }: BookmarkListItemProps) {
   const lastUpdatedText = formatDistanceToNow(new Date(bookmark.lastUpdated), { addSuffix: true });
   const progress = useMemo(() => {
     if (bookmark.totalChapters && bookmark.totalChapters > 0) {
@@ -30,25 +31,52 @@ export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFav
     }
     return null;
   }, [bookmark.chapter, bookmark.totalChapters]);
+  
+  const itemRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<NodeJS.Timeout>();
+  
+  const handlePointerDown = () => {
+    longPressTimer.current = setTimeout(() => {
+        onSelectionChange(bookmark.id, true);
+    }, 500); // 500ms for long press
+  };
+
+  const handlePointerUp = () => {
+      clearTimeout(longPressTimer.current);
+  };
+
+  const handlePointerLeave = () => {
+      clearTimeout(longPressTimer.current);
+  };
 
   return (
-    <div className={`flex items-center gap-4 p-2 rounded-lg border transition-colors animate-fade-in ${isSelected ? 'bg-muted/80 border-primary' : 'bg-muted/30 hover:bg-muted/60'}`}>
+    <div 
+        ref={itemRef}
+        className={`flex items-center gap-4 p-2 rounded-lg border transition-colors animate-fade-in ${isSelected ? 'bg-muted/80 border-primary' : 'bg-muted/30 hover:bg-muted/60'}`}
+        onTouchStart={handlePointerDown}
+        onTouchEnd={handlePointerUp}
+        onMouseDown={handlePointerDown}
+        onMouseUp={handlePointerUp}
+        onMouseLeave={handlePointerLeave}
+    >
         <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) => onSelectionChange(bookmark.id, !!checked)}
             aria-label={`Select bookmark ${bookmark.title}`}
             className="ml-2"
         />
-        <div className="relative w-10 h-14 rounded-md overflow-hidden shrink-0">
-            <Image 
-                src={bookmark.coverImage || `https://placehold.co/80x112.png`} 
-                alt={`Cover for ${bookmark.title}`}
-                data-ai-hint="manga cover"
-                layout="fill"
-                objectFit="cover"
-                className="bg-muted"
-            />
-        </div>
+        {!isCompact && (
+            <div className="relative w-10 h-14 rounded-md overflow-hidden shrink-0">
+                <Image 
+                    src={bookmark.coverImage || `https://placehold.co/80x112.png`} 
+                    alt={`Cover for ${bookmark.title}`}
+                    data-ai-hint="manga cover"
+                    layout="fill"
+                    objectFit="cover"
+                    className="bg-muted"
+                />
+            </div>
+        )}
         <div className="flex-1 grid grid-cols-4 gap-4 items-center">
             <div className="flex flex-col col-span-2">
                 <a href={bookmark.url} target="_blank" rel="noopener noreferrer" className="font-semibold hover:underline truncate" title={bookmark.title}>

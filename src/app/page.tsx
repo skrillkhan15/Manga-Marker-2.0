@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import type { Bookmark, View, ReadingStatus } from "@/types";
+import type { Bookmark, View, ReadingStatus, BackupData } from "@/types";
 import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarTrigger, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { BookMarked, LayoutDashboard, List, Loader2, Settings } from 'lucide-react';
@@ -34,7 +34,19 @@ export default function Home() {
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    // Auto-backup logic
+    const lastBackup = localStorage.getItem('mangamarks-autobackup-timestamp');
+    const now = Date.now();
+    const threeDays = 3 * 24 * 60 * 60 * 1000;
+    if (!lastBackup || (now - parseInt(lastBackup, 10)) > threeDays) {
+      if (bookmarks.length > 0) {
+        const backupData: BackupData = { bookmarks, readingStatuses };
+        localStorage.setItem('mangamarks-autobackup', JSON.stringify(backupData));
+        localStorage.setItem('mangamarks-autobackup-timestamp', now.toString());
+        console.log('MangaMarks: Performed automatic backup.');
+      }
+    }
+  }, [bookmarks, readingStatuses]);
 
 
   const addOrUpdateBookmark = (bookmark: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite'>, id?: string) => {

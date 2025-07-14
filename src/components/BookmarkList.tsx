@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import type { Bookmark, SortOrder, ViewLayout, ReadingStatus } from "@/types";
 import BookmarkCard from "./BookmarkCard";
 import BookmarkListItem from './BookmarkListItem';
-import { BookOpenCheck, SearchX, Trash2, CheckCircle2, ChevronDown, Filter, LayoutGrid, List, Star, Tags, Book, ChevronsUpDown } from "lucide-react";
+import { BookOpenCheck, SearchX, Trash2, CheckCircle2, ChevronDown, Filter, LayoutGrid, List, Star, Tags, Book, ChevronsUpDown, Rows } from "lucide-react";
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Button } from './ui/button';
@@ -15,6 +15,8 @@ import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { X } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
+import { Label } from './ui/label';
+import { Switch } from './ui/switch';
 
 interface BookmarkListProps {
   bookmarks: Bookmark[];
@@ -35,6 +37,7 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onE
   const [showFavorites, setShowFavorites] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [layout, setLayout] = useState<ViewLayout>('grid');
+  const [isCompact, setIsCompact] = useState(false);
 
   const statusesById = useMemo(() => {
     return readingStatuses.reduce((acc, status) => {
@@ -272,7 +275,7 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onE
       )}
 
        {bookmarks.length > 0 && (
-         <div className="flex items-center gap-4 py-2 px-3 bg-muted/30 rounded-lg border">
+         <div className="flex items-center gap-4 py-2 px-3 bg-muted/30 rounded-lg border flex-wrap">
            <Button variant="outline" size="sm" onClick={toggleSelectAll}>
              {selectedBookmarks.length === filteredAndSortedBookmarks.length ? 'Deselect All' : `Select All (${filteredAndSortedBookmarks.length})`}
            </Button>
@@ -299,9 +302,13 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onE
                         ))}
                     </DropdownMenuContent>
                 </DropdownMenu>
-
             </div>
            )}
+            <div className="flex items-center space-x-2 ml-auto">
+                <Rows className="h-4 w-4"/>
+                <Label htmlFor="compact-mode">Compact Mode</Label>
+                <Switch id="compact-mode" checked={isCompact} onCheckedChange={setIsCompact} />
+            </div>
          </div>
        )}
 
@@ -333,6 +340,7 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onE
               onUpdateChapter={onUpdateChapter}
               isSelected={selectedBookmarks.includes(bookmark.id)}
               onSelectionChange={handleSelectionChange}
+              isCompact={isCompact}
             />
           ))}
         </div>
@@ -348,6 +356,7 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onE
               onUpdateChapter={onUpdateChapter}
               isSelected={selectedBookmarks.includes(bookmark.id)}
               onSelectionChange={handleSelectionChange}
+              isCompact={isCompact}
             />
           ))}
         </div>

@@ -8,6 +8,7 @@ body {
 
 @layer base {
   :root {
+    --font-size-base: 16px;
     --background: 0 0% 96%; /* #F5F5F5 */
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -42,6 +43,7 @@ body {
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
   .dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
@@ -76,9 +78,66 @@ body {
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
+  .theme-mint {
+    --background: 210 20% 98%;
+    --foreground: 158 24% 15%;
+    --primary: 160 60% 45%;
+    --primary-foreground: 160 20% 98%;
+    --accent: 170 50% 75%;
+    --ring: 160 60% 45%;
+  }
+
+  .dark.theme-mint {
+    --background: 170 25% 12%;
+    --foreground: 160 15% 90%;
+    --primary: 158 55% 50%;
+    --primary-foreground: 158 10% 10%;
+    --accent: 158 35% 30%;
+    --ring: 158 55% 50%;
+  }
+
+  .theme-sunset {
+    --background: 30 50% 97%;
+    --foreground: 20 30% 20%;
+    --primary: 15 80% 60%;
+    --primary-foreground: 20 20% 98%;
+    --accent: 40 70% 80%;
+    --ring: 15 80% 60%;
+  }
+
+  .dark.theme-sunset {
+    --background: 20 20% 10%;
+    --foreground: 20 10% 85%;
+    --primary: 30 90% 65%;
+    --primary-foreground: 30 20% 10%;
+    --accent: 25 50% 30%;
+    --ring: 30 90% 65%;
+  }
+  
+  .theme-ocean {
+    --background: 210 30% 96%;
+    --foreground: 220 25% 15%;
+    --primary: 220 70% 55%;
+    --primary-foreground: 220 15% 98%;
+    --accent: 200 60% 80%;
+    --ring: 220 70% 55%;
+  }
+  
+  .dark.theme-ocean {
+    --background: 220 30% 10%;
+    --foreground: 210 15% 88%;
+    --primary: 210 80% 65%;
+    --primary-foreground: 210 10% 10%;
+    --accent: 215 40% 25%;
+    --ring: 210 80% 65%;
+  }
 }
 
 @layer base {
+  html {
+    font-size: var(--font-size-base);
+  }
   * {
     @apply border-border;
   }

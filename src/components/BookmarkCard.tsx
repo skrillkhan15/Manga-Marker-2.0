@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Edit, Star, Tag, Minus, Plus, BookOpen, StickyNote, X, List } from 'lucide-react';
@@ -26,10 +26,13 @@ interface BookmarkCardProps {
   onUpdateChapter: (id: string, newChapter: number) => void;
   isSelected: boolean;
   onSelectionChange: (id: string, isSelected: boolean) => void;
+  isCompact: boolean;
 }
 
-export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, isSelected, onSelectionChange }: BookmarkCardProps) {
+export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, isSelected, onSelectionChange, isCompact }: BookmarkCardProps) {
     const [lastUpdatedText, setLastUpdatedText] = useState('');
+    const cardRef = useRef<HTMLDivElement>(null);
+    const longPressTimer = useRef<NodeJS.Timeout>();
 
     useEffect(() => {
         const updateText = () => {
@@ -58,9 +61,31 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
       }
       return null;
     }, [bookmark.chapter, bookmark.totalChapters]);
+    
+    const handlePointerDown = () => {
+        longPressTimer.current = setTimeout(() => {
+            onSelectionChange(bookmark.id, true);
+        }, 500); // 500ms for long press
+    };
+
+    const handlePointerUp = () => {
+        clearTimeout(longPressTimer.current);
+    };
+
+    const handlePointerLeave = () => {
+        clearTimeout(longPressTimer.current);
+    };
 
   return (
-    <Card className={`flex flex-col bg-background/30 backdrop-blur-lg border shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1 ${isSelected ? 'border-primary shadow-primary/30' : 'border-white/20'} animate-fade-in`}>
+    <Card 
+        ref={cardRef}
+        className={`flex flex-col bg-background/30 backdrop-blur-lg border shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1 ${isSelected ? 'border-primary shadow-primary/30' : 'border-white/20'} animate-fade-in`}
+        onTouchStart={handlePointerDown}
+        onTouchEnd={handlePointerUp}
+        onMouseDown={handlePointerDown}
+        onMouseUp={handlePointerUp}
+        onMouseLeave={handlePointerLeave}
+    >
         <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-2">
             <div className="flex items-center h-full pt-1">
                 <Checkbox
@@ -70,26 +95,28 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
                     className="mr-2"
                 />
             </div>
-             <div className="relative w-16 h-24 rounded-md overflow-hidden shrink-0">
-                <Image 
-                    src={bookmark.coverImage || `https://placehold.co/128x192.png`} 
-                    alt={`Cover for ${bookmark.title}`}
-                    data-ai-hint="manga cover"
-                    layout="fill"
-                    objectFit="cover"
-                    className="bg-muted"
-                />
-                {status && (
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <div className="absolute bottom-0 left-0 right-0 h-1" style={{ backgroundColor: status.color }}></div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{status.label}</p>
-                        </TooltipContent>
-                    </Tooltip>
-                )}
-             </div>
+             {!isCompact && (
+                <div className="relative w-16 h-24 rounded-md overflow-hidden shrink-0">
+                    <Image 
+                        src={bookmark.coverImage || `https://placehold.co/128x192.png`} 
+                        alt={`Cover for ${bookmark.title}`}
+                        data-ai-hint="manga cover"
+                        layout="fill"
+                        objectFit="cover"
+                        className="bg-muted"
+                    />
+                    {status && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="absolute bottom-0 left-0 right-0 h-1" style={{ backgroundColor: status.color }}></div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{status.label}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    )}
+                </div>
+             )}
 
             <div className="flex-1">
                  <CardTitle className="text-lg leading-tight">

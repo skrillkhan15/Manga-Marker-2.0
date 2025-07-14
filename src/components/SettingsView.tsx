@@ -1,18 +1,21 @@
 
 "use client"
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import type { Bookmark, ReadingStatus } from "@/types";
+import type { Bookmark, ReadingStatus, BackupData, ThemeName } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
-import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag } from "lucide-react";
+import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History } from "lucide-react";
 import { format } from 'date-fns';
 import { Input } from './ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { ColorPicker } from './ColorPicker';
 import { Badge } from './ui/badge';
+import { Label } from './ui/label';
+import { Slider } from './ui/slider';
+import { useTheme } from 'next-themes';
 
 interface SettingsViewProps {
     bookmarks: Bookmark[];
@@ -24,6 +27,15 @@ interface SettingsViewProps {
     onDeleteTag: (tagName: string) => void;
 }
 
+const themes: { name: ThemeName, label: string, icon: React.FC<any> }[] = [
+    { name: 'system', label: 'System', icon: Laptop },
+    { name: 'light', label: 'Light', icon: Sun },
+    { name: 'dark', label: 'Dark', icon: Moon },
+    { name: 'mint', label: 'Mint', icon: Palette },
+    { name: 'sunset', label: 'Sunset', icon: Palette },
+    { name: 'ocean', label: 'Ocean', icon: Palette },
+];
+
 export default function SettingsView({ bookmarks, setBookmarks, readingStatuses, setReadingStatuses, allTags, onRenameTag, onDeleteTag }: SettingsViewProps) {
     const { toast } = useToast();
     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -31,6 +43,45 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
     const [newStatusLabel, setNewStatusLabel] = useState('');
     const [newStatusColor, setNewStatusColor] = useState('#888888');
     const [editingTag, setEditingTag] = useState<{ oldName: string; newName: string } | null>(null);
+    const [fontSize, setFontSize] = useState(16);
+    const [autoBackupTimestamp, setAutoBackupTimestamp] = useState<string | null>(null);
+
+    const { theme, setTheme } = useTheme();
+
+    useEffect(() => {
+        const storedFontSize = localStorage.getItem('mangamarks-font-size');
+        const initialSize = storedFontSize ? parseInt(storedFontSize, 10) : 16;
+        setFontSize(initialSize);
+        document.documentElement.style.setProperty('--font-size-base', `${initialSize}px`);
+
+        const backupTime = localStorage.getItem('mangamarks-autobackup-timestamp');
+        if (backupTime) {
+            setAutoBackupTimestamp(new Date(parseInt(backupTime, 10)).toLocaleString());
+        }
+    }, []);
+
+    const handleFontSizeChange = (value: number[]) => {
+        const newSize = value[0];
+        setFontSize(newSize);
+        document.documentElement.style.setProperty('--font-size-base', `${newSize}px`);
+        localStorage.setItem('mangamarks-font-size', newSize.toString());
+    };
+
+    const handleThemeChange = (newTheme: ThemeName) => {
+        const currentThemeName = document.body.dataset.themeName;
+        if (currentThemeName) {
+            document.body.classList.remove(`theme-${currentThemeName}`);
+        }
+        if (newTheme !== 'system' && newTheme !== 'light' && newTheme !== 'dark') {
+            document.body.classList.add(`theme-${newTheme}`);
+            document.body.dataset.themeName = newTheme;
+            localStorage.setItem('mangamarks-app-theme', newTheme);
+        } else {
+            delete document.body.dataset.themeName;
+            localStorage.removeItem('mangamarks-app-theme');
+        }
+        setTheme(newTheme);
+    };
 
     const tagCounts = useMemo(() => {
         const counts: Record<string, number> = {};
@@ -52,7 +103,7 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
             toast({ title: "No Bookmarks", description: "There's nothing to export yet.", variant: "destructive" });
             return;
         }
-        const dataToExport = {
+        const dataToExport: BackupData = {
             bookmarks,
             readingStatuses,
         };
@@ -61,8 +112,8 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
         )}`;
         const link = document.createElement("a");
         link.href = jsonString;
-        const timestamp = format(new Date(), 'yyyy-MM-dd');
-        link.download = `mangamarks_backup_${timestamp}.json`;
+        const timestamp = format(new Date(), 'yyyy-MM-dd_HH-mm-ss');
+        link.download = `MangaMarks_Backup_${timestamp}.json`;
         link.click();
         toast({ title: "Export Successful", description: "Your bookmarks and statuses have been downloaded."});
     };
@@ -102,6 +153,22 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
           }
         };
         reader.readAsText(file);
+    };
+    
+    const handleRestoreAutoBackup = () => {
+        const backupDataString = localStorage.getItem('mangamarks-autobackup');
+        if (backupDataString) {
+            try {
+                const backupData: BackupData = JSON.parse(backupDataString);
+                setBookmarks(backupData.bookmarks);
+                setReadingStatuses(backupData.readingStatuses);
+                toast({ title: "Auto-Backup Restored", description: "Your data has been restored from the latest automatic backup." });
+            } catch (error) {
+                toast({ title: "Restore Failed", description: "The automatic backup data seems to be corrupted.", variant: "destructive" });
+            }
+        } else {
+            toast({ title: "No Auto-Backup Found", description: "There is no automatic backup to restore from.", variant: "destructive" });
+        }
     };
 
     const handleAddNewStatus = () => {
@@ -161,19 +228,82 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
         <div className="space-y-8">
             <h1 className="text-3xl font-bold">Settings</h1>
             
+             <Card>
+                <CardHeader>
+                    <CardTitle>Appearance</CardTitle>
+                    <CardDescription>Customize the look and feel of the application.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div>
+                        <Label>Theme</Label>
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                           {themes.map(t => (
+                                <Button key={t.name} variant={theme === t.name ? 'default' : 'outline'} onClick={() => handleThemeChange(t.name)}>
+                                   <t.icon className="mr-2 h-4 w-4" />
+                                   {t.label}
+                                </Button>
+                           ))}
+                        </div>
+                    </div>
+                    <div>
+                       <Label htmlFor="font-size-slider" className="block mb-2">Font Size</Label>
+                        <div className="flex items-center gap-4">
+                           <Text className="h-5 w-5" />
+                           <Slider
+                                id="font-size-slider"
+                                min={12}
+                                max={20}
+                                step={1}
+                                value={[fontSize]}
+                                onValueChange={handleFontSizeChange}
+                            />
+                           <Text className="h-8 w-8" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle>Data Management</CardTitle>
-                    <CardDescription>Import or export your bookmarks and custom statuses. Importing will overwrite your current lists.</CardDescription>
+                    <CardDescription>Import or export your bookmarks. Importing will overwrite your current lists.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col sm:flex-row gap-4">
-                    <Button onClick={handleImportClick} variant="outline" className="w-full">
-                        <Upload className="mr-2 h-4 w-4" /> Import from JSON
-                    </Button>
-                    <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />
-                    <Button onClick={handleExport} disabled={bookmarks.length === 0} className="w-full">
-                        <Download className="mr-2 h-4 w-4" /> Export to JSON
-                    </Button>
+                <CardContent className="space-y-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <Button onClick={handleImportClick} variant="outline" className="w-full">
+                            <Upload className="mr-2 h-4 w-4" /> Import from JSON
+                        </Button>
+                        <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />
+                        <Button onClick={handleExport} disabled={bookmarks.length === 0} className="w-full">
+                            <Download className="mr-2 h-4 w-4" /> Export to JSON
+                        </Button>
+                    </div>
+                    <div className="flex items-center gap-4 p-4 border rounded-lg">
+                        <History className="h-6 w-6 text-muted-foreground" />
+                        <div className="flex-1">
+                            <h3 className="font-semibold">Automatic Local Backup</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Last backup: {autoBackupTimestamp || 'Never'}
+                            </p>
+                        </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="secondary" disabled={!autoBackupTimestamp}>Restore</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Restore from Auto-Backup?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                       This will overwrite your current bookmarks and settings with the data from the last automatic backup created on {autoBackupTimestamp}. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleRestoreAutoBackup}>Restore</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                 </CardContent>
             </Card>
 

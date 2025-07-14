@@ -24,3 +24,10 @@ export type SortOrder = 'lastUpdatedDesc' | 'lastUpdatedAsc' | 'titleAsc' | 'tit
 export type View = 'dashboard' | 'list' | 'settings';
 
 export type ViewLayout = 'grid' | 'list';
+
+export interface BackupData {
+  bookmarks: Bookmark[];
+  readingStatuses: ReadingStatus[];
+}
+
+export type ThemeName = 'system' | 'light' | 'dark' | 'mint' | 'sunset' | 'ocean';
