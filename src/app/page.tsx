@@ -12,6 +12,8 @@ import Dashboard from '@/components/Dashboard';
 import SettingsView from '@/components/SettingsView';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { BookmarkDialog } from '@/components/BookmarkDialog';
+import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 
 
 export default function Home() {
@@ -20,6 +22,7 @@ export default function Home() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     setIsMounted(true);
@@ -54,7 +57,20 @@ export default function Home() {
   };
 
   const deleteBookmarks = (ids: string[]) => {
-    setBookmarks(prev => prev.filter(b => !ids.includes(b.id)));
+    const bookmarksToDelete = bookmarks.filter(b => ids.includes(b.id));
+    const remainingBookmarks = bookmarks.filter(b => !ids.includes(b.id));
+    
+    setBookmarks(remainingBookmarks);
+
+    toast({
+      title: `${bookmarksToDelete.length} bookmark(s) deleted`,
+      description: "You can undo this action.",
+      action: (
+        <ToastAction altText="Undo" onClick={() => {
+            setBookmarks(currentBookmarks => [...bookmarksToDelete, ...currentBookmarks].sort((a,b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()));
+        }}>Undo</ToastAction>
+      ),
+    });
   };
 
   const toggleFavorite = (id: string) => {

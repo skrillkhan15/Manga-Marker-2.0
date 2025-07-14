@@ -132,6 +132,11 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
     setStatusFilter('all');
   }
 
+  const handleDelete = () => {
+    onDelete(selectedBookmarks);
+    setSelectedBookmarks([]);
+  }
+
   const isAnyFilterActive = showFavorites || statusFilter !== 'all' || selectedTags.length > 0;
 
   return (
@@ -284,26 +289,10 @@ export default function BookmarkList({ bookmarks, onDelete, onEdit, onToggleFavo
            <span className="text-sm text-muted-foreground">{selectedBookmarks.length} selected</span>
            {selectedBookmarks.length > 0 && (
              <div className="flex items-center gap-2">
-                <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This will permanently delete {selectedBookmarks.length} bookmark(s). This action cannot be undone.
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => { onDelete(selectedBookmarks); setSelectedBookmarks([]); }}>Continue</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-                </AlertDialog>
+                <Button variant="destructive" size="sm" onClick={handleDelete}>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                </Button>
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
