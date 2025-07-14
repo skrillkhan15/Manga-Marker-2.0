@@ -1,7 +1,7 @@
 
 "use client"
 
-import type { Bookmark, ReadingStatus, WeeklySummary } from "@/types";
+import type { Bookmark, ReadingStatus, WeeklySummary, ActivityLog } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 import { BookMarked, Star, TrendingUp, History, Heart, Flame, BookOpen } from "lucide-react";
 import { useMemo } from "react";
@@ -9,15 +9,17 @@ import Image from 'next/image';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { ChartContainer, ChartTooltipContent, ChartConfig } from "./ui/chart";
 import { Button } from "./ui/button";
+import { ReadingCalendar } from "./ReadingCalendar";
 
 interface DashboardProps {
     bookmarks: Bookmark[];
     readingStatuses: ReadingStatus[];
     readingStreak: number;
     weeklySummary: WeeklySummary;
+    activityLog: ActivityLog[];
 }
 
-export default function Dashboard({ bookmarks, readingStatuses, readingStreak, weeklySummary }: DashboardProps) {
+export default function Dashboard({ bookmarks, readingStatuses, readingStreak, weeklySummary, activityLog }: DashboardProps) {
 
     const { stats, recentlyUpdated, favoritesList, chartConfig, chartData } = useMemo(() => {
         const total = bookmarks.length;
@@ -211,33 +213,43 @@ export default function Dashboard({ bookmarks, readingStatuses, readingStreak, w
                     </CardContent>
                 </Card>
              </div>
+             
+            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Collection Status</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {bookmarks.length > 0 ? (
+                            <ChartContainer config={chartConfig} className="h-64 w-full">
+                                <BarChart accessibilityLayer data={chartData} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+                                    <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tick={<CustomXAxisTick />} height={40} />
+                                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                                    <Tooltip
+                                        cursor={false}
+                                        content={<ChartTooltipContent hideLabel />}
+                                    />
+                                    <Bar dataKey="value" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ChartContainer>
+                        ) : (
+                            <div className="flex items-center justify-center h-64 text-muted-foreground">
+                                <p>No data to display. Add some bookmarks!</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Collection Status</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {bookmarks.length > 0 ? (
-                        <ChartContainer config={chartConfig} className="h-64 w-full">
-                            <BarChart accessibilityLayer data={chartData} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
-                                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tick={<CustomXAxisTick />} height={40} />
-                                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                                <Tooltip
-                                    cursor={false}
-                                    content={<ChartTooltipContent hideLabel />}
-                                />
-                                <Bar dataKey="value" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ChartContainer>
-                    ) : (
-                        <div className="flex items-center justify-center h-64 text-muted-foreground">
-                            <p>No data to display. Add some bookmarks!</p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Reading Diary</CardTitle>
+                        <CardDescription>A calendar view of your activity.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ReadingCalendar activityLog={activityLog} />
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     )
 }
-
-    

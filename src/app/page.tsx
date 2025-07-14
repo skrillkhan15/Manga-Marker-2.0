@@ -537,7 +537,7 @@ export default function Home() {
         <main className="flex-1 p-4 md:p-6 lg:p-8">
             <Reminders reminders={dueReminders} onDismiss={dismissReminder} />
             <>
-                {activeView === 'dashboard' && <Dashboard bookmarks={bookmarks} readingStatuses={readingStatuses} readingStreak={readingStreak} weeklySummary={weeklySummary} />}
+                {activeView === 'dashboard' && <Dashboard bookmarks={bookmarks} readingStatuses={readingStatuses} readingStreak={readingStreak} weeklySummary={weeklySummary} activityLog={activityLog} />}
                 {activeView === 'list' && (
                 <BookmarkList 
                     bookmarks={bookmarksInView}
