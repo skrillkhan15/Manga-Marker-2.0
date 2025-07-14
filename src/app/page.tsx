@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
 import type { Bookmark, View, ReadingStatus, BackupData, BookmarkHistory, SortPreset, Folder } from "@/types";
-import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarTrigger, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarSeparator, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarGroupAction } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarTrigger, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarSeparator, SidebarGroup, SidebarGroupLabel, SidebarGroupContent } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { BookMarked, LayoutDashboard, List, Loader2, Settings, Folder as FolderIcon, Plus, Edit2, Trash2, X, MoreVertical, FolderPlus, Check } from 'lucide-react';
 import BookmarkList from '@/components/BookmarkList';
@@ -19,6 +19,8 @@ import LockScreen from '@/components/LockScreen';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Reminders } from '@/components/Reminders';
+import { isPast } from 'date-fns';
 
 const defaultStatuses: ReadingStatus[] = [
     { id: 'reading', label: 'Reading', color: '#3b82f6' },
@@ -69,6 +71,18 @@ export default function Home() {
       }
     }
   }, [bookmarks, readingStatuses, sortPresets, folders]);
+  
+  const dueReminders = useMemo(() => {
+    const now = new Date();
+    return bookmarks.filter(b => b.reminderDate && isPast(new Date(b.reminderDate)));
+  }, [bookmarks]);
+
+  const dismissReminder = (bookmarkId: string) => {
+    setBookmarks(prev => 
+      prev.map(b => b.id === bookmarkId ? { ...b, reminderDate: undefined } : b)
+    );
+  };
+
 
   const addFolder = (name: string) => {
     const newFolder: Folder = { id: Date.now().toString(), name };
@@ -279,11 +293,6 @@ export default function Home() {
     return (
       <SidebarGroup>
         <SidebarGroupLabel>Folders</SidebarGroupLabel>
-        <SidebarGroupAction asChild>
-          <Button variant="ghost" size="icon" className="w-6 h-6" onClick={handleStartAdd}>
-            <FolderPlus className="w-4 h-4" />
-          </Button>
-        </SidebarGroupAction>
         <SidebarGroupContent>
           <SidebarMenu>
             {folders.map(folder =>
@@ -348,6 +357,12 @@ export default function Home() {
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCancel}><X className="w-4 h-4" /></Button>
               </div>
             )}
+            <SidebarMenuItem>
+                <SidebarMenuButton onClick={handleStartAdd} size="sm" className="text-muted-foreground hover:text-foreground">
+                    <FolderPlus />
+                    <span>Add Folder</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
@@ -425,6 +440,7 @@ export default function Home() {
            </div>
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8">
+            <Reminders reminders={dueReminders} onDismiss={dismissReminder} />
             <>
                 {activeView === 'dashboard' && <Dashboard bookmarks={bookmarks} readingStatuses={readingStatuses} />}
                 {activeView === 'list' && (

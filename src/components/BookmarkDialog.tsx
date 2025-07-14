@@ -8,6 +8,7 @@ import * as z from "zod"
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { extractMetadata } from '@/ai/flows/extract-metadata-flow';
+import { addDays, formatISO } from 'date-fns';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -48,6 +49,7 @@ const formSchema = z.object({
   statusId: z.string({ required_error: "Please select a status." }),
   notes: z.string().optional(),
   folderId: z.string().optional(),
+  reminderDays: z.coerce.number().min(0).optional(),
 });
 
 type BookmarkFormValues = z.infer<typeof formSchema>;
@@ -81,6 +83,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
       statusId: readingStatuses[0]?.id || "plan-to-read",
       notes: "",
       folderId: "",
+      reminderDays: 0,
     },
   });
   
@@ -97,6 +100,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
           statusId: bookmark.statusId || readingStatuses[0]?.id,
           notes: bookmark.notes || "",
           folderId: bookmark.folderId || "",
+          reminderDays: 0, // Don't pre-fill reminder, it's a one-time action
         });
         setCoverPreview(bookmark.coverImage || null);
       } else {
@@ -110,6 +114,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
           statusId: readingStatuses.find(s => s.id === 'plan-to-read')?.id || readingStatuses[0]?.id,
           notes: "",
           folderId: "",
+          reminderDays: 0,
         });
         setCoverPreview(null);
       }
@@ -143,9 +148,9 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
     
     setIsFetching(true);
     try {
-      const metadata = await extractMetadata({ url });
-      form.setValue('title', metadata.title, { shouldValidate: true });
-      form.setValue('chapter', metadata.chapter, { shouldValidate: true });
+      const { title, chapter } = await extractMetadata({ url });
+      form.setValue('title', title, { shouldValidate: true });
+      form.setValue('chapter', chapter, { shouldValidate: true });
       toast({
         title: "Metadata Extracted!",
         description: "Title and chapter have been filled in.",
@@ -163,9 +168,14 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
   };
 
   const handleFormSubmit = (values: BookmarkFormValues) => {
+    const reminderDate = values.reminderDays && values.reminderDays > 0
+      ? formatISO(addDays(new Date(), values.reminderDays))
+      : undefined;
+
     const dataToSubmit = {
       ...values,
       folderId: values.folderId || undefined, // Ensure empty string becomes undefined
+      reminderDate,
     };
     onSubmit(dataToSubmit, bookmark?.id);
     onOpenChange(false);
@@ -417,6 +427,22 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
                         <FormMessage />
                       </FormItem>
                     )}
+                />
+                <FormField
+                  control={form.control}
+                  name="reminderDays"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Set a reminder (in days)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 7 for one week" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
+                      </FormControl>
+                       <FormDescription>
+                        Leave at 0 to not set a reminder.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
                 <DialogFooter className="pt-4">
                     <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>

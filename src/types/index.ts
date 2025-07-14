@@ -30,6 +30,7 @@ export interface Bookmark {
   notes?: string;
   history?: BookmarkHistory[];
   folderId?: string;
+  reminderDate?: string; // ISO string for the reminder
 }
 
 export type SortOrder = 'lastUpdatedDesc' | 'lastUpdatedAsc' | 'titleAsc' | 'titleDesc' | 'chapterDesc' | 'chapterAsc';
