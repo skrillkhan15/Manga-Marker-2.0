@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Bookmark } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 import { Download, Upload } from "lucide-react";
+import { format } from 'date-fns';
 
 interface SettingsViewProps {
     bookmarks: Bookmark[];
@@ -27,7 +28,8 @@ export default function SettingsView({ bookmarks, setBookmarks }: SettingsViewPr
         )}`;
         const link = document.createElement("a");
         link.href = jsonString;
-        link.download = "mangamarks_backup.json";
+        const timestamp = format(new Date(), 'yyyy-MM-dd');
+        link.download = `mangamarks_backup_${timestamp}.json`;
         link.click();
         toast({ title: "Export Successful", description: "Your bookmarks have been downloaded."});
     };
