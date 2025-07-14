@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import type { Bookmark, View, ReadingStatus, BackupData, BookmarkHistory, SortPreset, Folder, ActivityLog } from "@/types";
+import type { Bookmark, View, ReadingStatus, BackupData, BookmarkHistory, SortPreset, Folder, ActivityLog, CurrentFilterState } from "@/types";
 import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarTrigger, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarSeparator, SidebarGroup, SidebarGroupLabel, SidebarGroupContent } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { BookMarked, LayoutDashboard, List, Loader2, Settings, Folder as FolderIcon, Plus, Edit2, Trash2, X, MoreVertical, FolderPlus, Check, History } from 'lucide-react';
@@ -48,6 +48,7 @@ export default function Home() {
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const { toast } = useToast();
+  const [currentFilterState, setCurrentFilterState] = useState<CurrentFilterState | null>(null);
   
   const {
     isLocked,
@@ -140,7 +141,7 @@ export default function Home() {
         const newHistoryEntry: BookmarkHistory = { state: currentState, date: now };
         const updatedHistory = [newHistoryEntry, ...(history || [])].slice(0, MAX_HISTORY);
 
-        const updatedBookmark = { ...b, ...bookmark, history: updatedHistory, lastUpdated: now };
+        const updatedBookmark = { ...currentState, ...bookmark, history: updatedHistory, lastUpdated: now };
         
         let logDescription = `Updated "${updatedBookmark.title}".`;
         // Create more detailed log for specific changes
@@ -536,6 +537,7 @@ export default function Home() {
                     onMoveToFolder={moveBookmarksToFolder}
                     activeFolder={selectedFolderId ? folders.find(f => f.id === selectedFolderId) : undefined}
                     onClearFolderFilter={() => setSelectedFolderId(null)}
+                    onFilterStateChange={setCurrentFilterState}
                 />
                 )}
                 {activeView === 'activity' && <ActivityLogView logs={activityLog} onClearLog={clearLog} />}
@@ -556,6 +558,7 @@ export default function Home() {
                     onResetStreak={resetStreak}
                     activityLog={activityLog}
                     setActivityLog={setActivityLog}
+                    currentFilterState={currentFilterState}
                   />
                 )}
             </>

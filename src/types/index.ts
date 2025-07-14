@@ -68,6 +68,12 @@ export interface SortPreset {
   };
 }
 
+export interface CurrentFilterState extends Omit<SortPreset, 'id' | 'name'> {
+  settings: SortPreset['settings'] & {
+      ratingFilter: number;
+  }
+}
+
 export interface BackupData {
   bookmarks: Bookmark[];
   readingStatuses: ReadingStatus[];

@@ -4,9 +4,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import type { Bookmark, ReadingStatus, BackupData, ThemeName, SortPreset, AuthProps, Folder, ActivityLog } from "@/types";
+import type { Bookmark, ReadingStatus, BackupData, ThemeName, SortPreset, AuthProps, Folder, ActivityLog, CurrentFilterState } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
-import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History, Lock, KeyRound, HelpCircle, Flame } from "lucide-react";
+import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History, Lock, KeyRound, HelpCircle, Flame, Bug } from "lucide-react";
 import { format } from 'date-fns';
 import { Input } from './ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
@@ -19,6 +19,8 @@ import { useTheme } from 'next-themes';
 import * as CryptoJS from 'crypto-js';
 import { Switch } from './ui/switch';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import useLocalStorage from '@/hooks/use-local-storage';
+import { DebugPanel } from './DebugPanel';
 
 interface SettingsViewProps {
     bookmarks: Bookmark[];
@@ -36,6 +38,7 @@ interface SettingsViewProps {
     onResetStreak: () => void;
     activityLog: ActivityLog[];
     setActivityLog: (logs: ActivityLog[] | ((prev: ActivityLog[]) => ActivityLog[])) => void;
+    currentFilterState: CurrentFilterState | null;
 }
 
 const themes: { name: ThemeName, label: string, icon: React.FC<any> }[] = [
@@ -63,6 +66,7 @@ export default function SettingsView({
     onResetStreak,
     activityLog,
     setActivityLog,
+    currentFilterState,
 }: SettingsViewProps) {
     const { toast } = useToast();
     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -81,6 +85,7 @@ export default function SettingsView({
     const [currentPin, setCurrentPin] = useState('');
     const [newPin, setNewPin] = useState('');
     const [confirmNewPin, setConfirmNewPin] = useState('');
+    const [isDevMode, setIsDevMode] = useLocalStorage('mangamarks-dev-mode-enabled', false);
 
     const { theme, setTheme } = useTheme();
 
@@ -785,6 +790,37 @@ export default function SettingsView({
                     </Accordion>
                 </CardContent>
             </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Advanced</CardTitle>
+                    <CardDescription>Manage advanced features and developer options.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                            <Bug className="h-6 w-6 text-muted-foreground" />
+                            <div>
+                                <h3 className="font-semibold">Developer Mode</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    Show debugging tools and advanced information.
+                                </p>
+                            </div>
+                        </div>
+                        <Switch
+                            checked={isDevMode}
+                            onCheckedChange={setIsDevMode}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+            
+            {isDevMode && (
+                <DebugPanel
+                    bookmarks={bookmarks}
+                    currentFilterState={currentFilterState}
+                />
+            )}
 
         </div>
     );

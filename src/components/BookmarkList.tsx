@@ -1,7 +1,7 @@
 
 "use client";
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Bookmark, SortOrder, ViewLayout, ReadingStatus, BookmarkHistory, SortPreset, Folder } from "@/types";
+import type { Bookmark, SortOrder, ViewLayout, ReadingStatus, BookmarkHistory, SortPreset, Folder, CurrentFilterState } from "@/types";
 import BookmarkCard from "./BookmarkCard";
 import BookmarkListItem from './BookmarkListItem';
 import { BookOpenCheck, SearchX, Trash2, CheckCircle2, ChevronDown, Filter, LayoutGrid, List, Star, Tags, Book, ChevronsUpDown, Rows, Save, Settings2, X, PlusCircle, Folder as FolderIcon, Move } from "lucide-react";
@@ -39,6 +39,7 @@ interface BookmarkListProps {
   onMoveToFolder: (ids: string[], folderId: string | null) => void;
   activeFolder?: Folder;
   onClearFolderFilter: () => void;
+  onFilterStateChange: (state: CurrentFilterState) => void;
 }
 
 export default function BookmarkList({ 
@@ -56,7 +57,8 @@ export default function BookmarkList({
     onRevert,
     onMoveToFolder,
     activeFolder,
-    onClearFolderFilter
+    onClearFolderFilter,
+    onFilterStateChange
 }: BookmarkListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("lastUpdatedDesc");
@@ -80,6 +82,22 @@ export default function BookmarkList({
     setSelectedBookmarks([]);
     setSearchTerm('');
   }, [activeFolder]);
+
+  useEffect(() => {
+    // Inform parent about filter state changes
+    onFilterStateChange({
+      settings: {
+        searchTerm,
+        sortOrder,
+        selectedTags,
+        showFavorites,
+        statusFilter,
+        layout,
+        isCompact,
+        ratingFilter
+      }
+    });
+  }, [searchTerm, sortOrder, selectedTags, showFavorites, statusFilter, layout, isCompact, ratingFilter, onFilterStateChange]);
 
   const handleEdit = (bookmark: Bookmark) => {
     setEditingBookmark(bookmark);
@@ -568,7 +586,7 @@ export default function BookmarkList({
             <>
                 <FolderIcon className="w-16 h-16 text-muted-foreground mb-4" />
                 <h2 className="text-xl font-semibold">{ activeFolder ? `Folder "${activeFolder.name}" is empty` : 'No Bookmarks Yet' }</h2>
-                <p className="text-muted-foreground">{ activeFolder ? 'Add some bookmarks to this folder.' : 'Add a manga or manhwa to get started!' }</p>
+                <p className="text-muted-foreground">{ activeFolder ? 'Add some bookmarks to this folder.' : 'Add a new manga or manhwa to get started!' }</p>
             </>
           )}
         </div>
