@@ -4,9 +4,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import type { Bookmark, ReadingStatus, BackupData, ThemeName, SortPreset } from "@/types";
+import type { Bookmark, ReadingStatus, BackupData, ThemeName, SortPreset, AuthProps } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
-import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History, Lock } from "lucide-react";
+import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History, Lock, KeyRound } from "lucide-react";
 import { format } from 'date-fns';
 import { Input } from './ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
@@ -17,6 +17,7 @@ import { Label } from './ui/label';
 import { Slider } from './ui/slider';
 import { useTheme } from 'next-themes';
 import * as CryptoJS from 'crypto-js';
+import { Switch } from './ui/switch';
 
 interface SettingsViewProps {
     bookmarks: Bookmark[];
@@ -28,6 +29,7 @@ interface SettingsViewProps {
     allTags: string[];
     onRenameTag: (oldName: string, newName: string) => void;
     onDeleteTag: (tagName: string) => void;
+    auth: AuthProps;
 }
 
 const themes: { name: ThemeName, label: string, icon: React.FC<any> }[] = [
@@ -48,7 +50,8 @@ export default function SettingsView({
     setSortPresets,
     allTags, 
     onRenameTag, 
-    onDeleteTag 
+    onDeleteTag,
+    auth
 }: SettingsViewProps) {
     const { toast } = useToast();
     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -62,6 +65,10 @@ export default function SettingsView({
     const [importPassword, setImportPassword] = useState('');
     const [isEncryptedExportOpen, setIsEncryptedExportOpen] = useState(false);
     const [isEncryptedImportOpen, setIsEncryptedImportOpen] = useState(false);
+    const [isChangePinOpen, setIsChangePinOpen] = useState(false);
+    const [currentPin, setCurrentPin] = useState('');
+    const [newPin, setNewPin] = useState('');
+    const [confirmNewPin, setConfirmNewPin] = useState('');
 
     const { theme, setTheme } = useTheme();
 
@@ -306,6 +313,32 @@ export default function SettingsView({
         setEditingTag({ oldName: tagName, newName: tagName });
     };
 
+    const handleChangePin = async () => {
+        if (!auth.isPinSet) return;
+        
+        const isCurrentPinValid = await auth.checkPin(currentPin);
+        if (!isCurrentPinValid) {
+            toast({ title: "Error", description: "Current PIN is incorrect.", variant: "destructive" });
+            return;
+        }
+        if (newPin.length < 4) {
+            toast({ title: "Error", description: "New PIN must be at least 4 digits.", variant: "destructive" });
+            return;
+        }
+        if (newPin !== confirmNewPin) {
+            toast({ title: "Error", description: "New PINs do not match.", variant: "destructive" });
+            return;
+        }
+
+        auth.changePin(newPin);
+        toast({ title: "Success", description: "Your PIN has been changed." });
+        setCurrentPin('');
+        setNewPin('');
+        setConfirmNewPin('');
+        setIsChangePinOpen(false);
+    };
+
+
     return (
         <div className="space-y-8">
             <h1 className="text-3xl font-bold">Settings</h1>
@@ -342,6 +375,73 @@ export default function SettingsView({
                            <Text className="h-8 w-8" />
                         </div>
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Security</CardTitle>
+                    <CardDescription>Manage your application lock settings.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                            <KeyRound className="h-6 w-6 text-muted-foreground" />
+                            <div>
+                                <h3 className="font-semibold">Enable PIN Lock</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    Secure the app with a PIN code.
+                                </p>
+                            </div>
+                        </div>
+                        <Switch
+                            checked={auth.isLockEnabled}
+                            onCheckedChange={(checked) => auth.setIsLockEnabled(checked)}
+                        />
+                    </div>
+                    {auth.isLockEnabled && auth.isPinSet && (
+                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                            <h3 className="font-semibold">PIN Actions</h3>
+                            <div className="flex gap-2">
+                                <AlertDialog open={isChangePinOpen} onOpenChange={setIsChangePinOpen}>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="secondary">Change PIN</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Change PIN</AlertDialogTitle>
+                                        </AlertDialogHeader>
+                                        <div className="space-y-2">
+                                            <Input type="password" placeholder="Current PIN" value={currentPin} onChange={e => setCurrentPin(e.target.value)} />
+                                            <Input type="password" placeholder="New PIN" value={newPin} onChange={e => setNewPin(e.target.value)} />
+                                            <Input type="password" placeholder="Confirm New PIN" value={confirmNewPin} onChange={e => setConfirmNewPin(e.target.value)} />
+                                        </div>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleChangePin}>Save Changes</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                         <Button variant="destructive">Reset App</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This action cannot be undone. This will permanently delete all your bookmarks, statuses, presets, and settings, and remove the PIN lock.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => auth.resetApp()}>Reset App</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

@@ -14,6 +14,8 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { BookmarkDialog } from '@/components/BookmarkDialog';
 import { useToast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
+import { useAuthLock } from '@/hooks/use-auth-lock';
+import LockScreen from '@/components/LockScreen';
 
 const defaultStatuses: ReadingStatus[] = [
     { id: 'reading', label: 'Reading', color: '#3b82f6' },
@@ -34,6 +36,18 @@ export default function Home() {
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const { toast } = useToast();
+  
+  const {
+    isLocked,
+    isLockEnabled,
+    setIsLockEnabled,
+    unlockApp,
+    setPin,
+    changePin,
+    resetApp,
+    isPinSet,
+    checkPin,
+  } = useAuthLock();
 
   useEffect(() => {
     setIsMounted(true);
@@ -195,6 +209,18 @@ export default function Home() {
     );
   };
 
+  if (!isMounted) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (isLockEnabled && isLocked) {
+    return <LockScreen isPinSet={isPinSet} onPinSubmit={unlockApp} onPinSet={setPin} onReset={resetApp} />;
+  }
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -238,43 +264,38 @@ export default function Home() {
            </div>
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8">
-            {!isMounted ? (
-                <div className="flex items-center justify-center h-full">
-                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-                </div>
-            ) : (
-                <>
-                    {activeView === 'dashboard' && <Dashboard bookmarks={bookmarks} readingStatuses={readingStatuses} />}
-                    {activeView === 'list' && (
-                    <BookmarkList 
-                        bookmarks={bookmarks}
-                        readingStatuses={readingStatuses}
-                        sortPresets={sortPresets}
-                        setSortPresets={setSortPresets}
-                        onDelete={deleteBookmarks}
-                        onToggleFavorite={toggleFavorite}
-                        onUpdateChapter={updateChapter}
-                        onUpdateStatus={updateBookmarkStatus}
-                        allTags={allTags}
-                        onEditSubmit={addOrUpdateBookmark}
-                        onRevert={revertBookmark}
-                    />
-                    )}
-                    {activeView === 'settings' && (
-                      <SettingsView 
-                        bookmarks={bookmarks} 
-                        setBookmarks={setBookmarks} 
-                        readingStatuses={readingStatuses} 
-                        setReadingStatuses={setReadingStatuses}
-                        sortPresets={sortPresets}
-                        setSortPresets={setSortPresets}
-                        allTags={allTags}
-                        onRenameTag={renameTag}
-                        onDeleteTag={deleteTag}
-                      />
-                    )}
-                </>
-            )}
+            <>
+                {activeView === 'dashboard' && <Dashboard bookmarks={bookmarks} readingStatuses={readingStatuses} />}
+                {activeView === 'list' && (
+                <BookmarkList 
+                    bookmarks={bookmarks}
+                    readingStatuses={readingStatuses}
+                    sortPresets={sortPresets}
+                    setSortPresets={setSortPresets}
+                    onDelete={deleteBookmarks}
+                    onToggleFavorite={toggleFavorite}
+                    onUpdateChapter={updateChapter}
+                    onUpdateStatus={updateBookmarkStatus}
+                    allTags={allTags}
+                    onEditSubmit={addOrUpdateBookmark}
+                    onRevert={revertBookmark}
+                />
+                )}
+                {activeView === 'settings' && (
+                  <SettingsView 
+                    bookmarks={bookmarks} 
+                    setBookmarks={setBookmarks} 
+                    readingStatuses={readingStatuses} 
+                    setReadingStatuses={setReadingStatuses}
+                    sortPresets={sortPresets}
+                    setSortPresets={setSortPresets}
+                    allTags={allTags}
+                    onRenameTag={renameTag}
+                    onDeleteTag={deleteTag}
+                    auth={{ isLockEnabled, setIsLockEnabled, changePin, isPinSet, checkPin, resetApp }}
+                  />
+                )}
+            </>
         </main>
       </SidebarInset>
       <BookmarkDialog

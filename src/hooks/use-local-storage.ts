@@ -32,23 +32,22 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<SetState
   // form of a state setter to get the latest state.
   const setValue: Dispatch<SetStateAction<T>> = useCallback(
     (value) => {
-      setStoredValue((currentValue) => {
-        // Allow value to be a function so we have the same API as useState
-        const valueToStore = value instanceof Function ? value(currentValue) : value;
+      // Allow value to be a function so we have the same API as useState
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      
+      // Save state
+      setStoredValue(valueToStore);
 
-        // Save to local storage
-        if (!isServer) {
-          try {
-            window.localStorage.setItem(key, JSON.stringify(valueToStore));
-          } catch (error) {
-            console.error(`Error setting localStorage key "${key}":`, error);
-          }
+      // Save to local storage
+      if (!isServer) {
+        try {
+          window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        } catch (error) {
+          console.error(`Error setting localStorage key "${key}":`, error);
         }
-        
-        return valueToStore;
-      });
+      }
     },
-    [key]
+    [key, storedValue] // storedValue is needed for the function form of setter
   );
   
   // This effect synchronizes the state if the localStorage is changed in another tab.

@@ -1,5 +1,6 @@
 
 
+
 export interface ReadingStatus {
   id: string;
   label: string;
@@ -53,3 +54,12 @@ export interface BackupData {
 }
 
 export type ThemeName = 'system' | 'light' | 'dark' | 'mint' | 'sunset' | 'ocean';
+
+export interface AuthProps {
+    isLockEnabled: boolean;
+    setIsLockEnabled: (enabled: boolean) => void;
+    isPinSet: boolean;
+    changePin: (newPin: string) => void;
+    checkPin: (pin: string) => Promise<boolean>;
+    resetApp: () => void;
+}
