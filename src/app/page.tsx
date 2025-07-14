@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
 import type { Bookmark, View } from "@/types";
 import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarTrigger, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { BookMarked, LayoutDashboard, List, Settings } from 'lucide-react';
+import { BookMarked, LayoutDashboard, List, Loader2, Settings } from 'lucide-react';
 import BookmarkList from '@/components/BookmarkList';
 import Dashboard from '@/components/Dashboard';
 import SettingsView from '@/components/SettingsView';
@@ -19,6 +19,12 @@ export default function Home() {
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
 
   const addOrUpdateBookmark = (bookmark: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite'>, id?: string) => {
     setBookmarks(prev => {
@@ -131,19 +137,27 @@ export default function Home() {
            </div>
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8">
-            {activeView === 'dashboard' && <Dashboard bookmarks={bookmarks} />}
-            {activeView === 'list' && (
-              <BookmarkList 
-                bookmarks={bookmarks}
-                onDelete={deleteBookmarks}
-                onEdit={handleEdit}
-                onToggleFavorite={toggleFavorite}
-                onUpdateChapter={updateChapter}
-                onUpdateStatus={updateBookmarkStatus}
-                allTags={allTags}
-              />
+            {!isMounted ? (
+                <div className="flex items-center justify-center h-full">
+                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                </div>
+            ) : (
+                <>
+                    {activeView === 'dashboard' && <Dashboard bookmarks={bookmarks} />}
+                    {activeView === 'list' && (
+                    <BookmarkList 
+                        bookmarks={bookmarks}
+                        onDelete={deleteBookmarks}
+                        onEdit={handleEdit}
+                        onToggleFavorite={toggleFavorite}
+                        onUpdateChapter={updateChapter}
+                        onUpdateStatus={updateBookmarkStatus}
+                        allTags={allTags}
+                    />
+                    )}
+                    {activeView === 'settings' && <SettingsView bookmarks={bookmarks} setBookmarks={setBookmarks} />}
+                </>
             )}
-            {activeView === 'settings' && <SettingsView bookmarks={bookmarks} setBookmarks={setBookmarks} />}
         </main>
       </SidebarInset>
       <BookmarkDialog
