@@ -3,7 +3,7 @@
 
 import type { Bookmark, ReadingStatus } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
-import { BookMarked, Star, Tag, TrendingUp, History, Heart } from "lucide-react";
+import { BookMarked, Star, Tag, TrendingUp, History, Heart, Flame } from "lucide-react";
 import { useMemo } from "react";
 import Image from 'next/image';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
@@ -13,9 +13,10 @@ import { Button } from "./ui/button";
 interface DashboardProps {
     bookmarks: Bookmark[];
     readingStatuses: ReadingStatus[];
+    readingStreak: number;
 }
 
-export default function Dashboard({ bookmarks, readingStatuses }: DashboardProps) {
+export default function Dashboard({ bookmarks, readingStatuses, readingStreak }: DashboardProps) {
 
     const { stats, recentlyUpdated, favoritesList, chartConfig, chartData } = useMemo(() => {
         const total = bookmarks.length;
@@ -75,7 +76,7 @@ export default function Dashboard({ bookmarks, readingStatuses }: DashboardProps
                         />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{bookmark.title}</p>
+                        <p className="font-semibold text-sm truncate">{bookmark.alias || bookmark.title}</p>
                         <p className="text-xs text-muted-foreground">Chapter {bookmark.chapter || 0}</p>
                     </div>
                     <Button asChild variant="secondary" size="sm">
@@ -126,13 +127,13 @@ export default function Dashboard({ bookmarks, readingStatuses }: DashboardProps
                         <div className="text-2xl font-bold">{stats.favorites}</div>
                     </CardContent>
                 </Card>
-                <Card>
+                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Unique Tags</CardTitle>
-                        <Tag className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Reading Streak</CardTitle>
+                        <Flame className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{stats.uniqueTags}</div>
+                        <div className="text-2xl font-bold">{readingStreak} {readingStreak !== 0 ? <span className="text-lg">day{readingStreak > 1 ? 's' : ''}</span> : ''}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -141,7 +142,7 @@ export default function Dashboard({ bookmarks, readingStatuses }: DashboardProps
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-xl font-bold truncate" title={stats.latestUpdate?.title || 'N/A'}>{stats.latestUpdate?.title || 'N/A'}</div>
+                        <div className="text-xl font-bold truncate" title={stats.latestUpdate?.title || 'N/A'}>{stats.latestUpdate?.alias || stats.latestUpdate?.title || 'N/A'}</div>
                         <p className="text-xs text-muted-foreground">
                             {stats.latestUpdate ? new Date(stats.latestUpdate.lastUpdated).toLocaleDateString() : ''}
                         </p>

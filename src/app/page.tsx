@@ -20,14 +20,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Reminders } from '@/components/Reminders';
-import { isPast } from 'date-fns';
+import { isPast, isToday, isYesterday, startOfDay } from 'date-fns';
 
 const defaultStatuses: ReadingStatus[] = [
-    { id: 'reading', label: 'Reading', color: '#3b82f6' },
-    { id: 'completed', label: 'Completed', color: '#22c55e' },
-    { id: 'on-hold', label: 'On Hold', color: '#eab308' },
-    { id: 'dropped', label: 'Dropped', color: '#ef4444' },
-    { id: 'plan-to-read', label: 'Plan to Read', color: '#6b7280' }
+    { id: 'reading', label: 'Reading', color: '#3b82f6', icon: '📖' },
+    { id: 'completed', label: 'Completed', color: '#22c55e', icon: '✅' },
+    { id: 'on-hold', label: 'On Hold', color: '#eab308', icon: '⏸️' },
+    { id: 'dropped', label: 'Dropped', color: '#ef4444', icon: '🗑️' },
+    { id: 'plan-to-read', label: 'Plan to Read', color: '#6b7280', icon: '🗓️' }
 ];
 
 const MAX_HISTORY = 5;
@@ -37,6 +37,8 @@ export default function Home() {
   const [readingStatuses, setReadingStatuses] = useLocalStorage<ReadingStatus[]>("manga-statuses", defaultStatuses);
   const [sortPresets, setSortPresets] = useLocalStorage<SortPreset[]>("manga-presets", []);
   const [folders, setFolders] = useLocalStorage<Folder[]>("manga-folders", []);
+  const [readingStreak, setReadingStreak] = useLocalStorage<number>("mangamarks-streak-count", 0);
+  const [lastStreakUpdate, setLastStreakUpdate] = useLocalStorage<string>("mangamarks-streak-last-update", "");
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -83,6 +85,22 @@ export default function Home() {
     );
   };
 
+  const updateReadingStreak = () => {
+    const today = new Date();
+    const lastUpdateDate = lastStreakUpdate ? new Date(lastStreakUpdate) : null;
+
+    if (!lastUpdateDate || !isToday(lastUpdateDate)) {
+        if (lastUpdateDate && isYesterday(lastUpdateDate)) {
+            // Consecutive day
+            setReadingStreak(prev => prev + 1);
+        } else {
+            // Not a consecutive day, reset to 1
+            setReadingStreak(1);
+        }
+        setLastStreakUpdate(startOfDay(today).toISOString());
+    }
+    // If it's the same day, do nothing.
+  };
 
   const addFolder = (name: string) => {
     const newFolder: Folder = { id: Date.now().toString(), name };
@@ -107,6 +125,7 @@ export default function Home() {
   };
 
   const addOrUpdateBookmark = (bookmark: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'history'>, id?: string) => {
+    updateReadingStreak();
     setBookmarks(prev => {
       const now = new Date().toISOString();
       if (id) { // Editing
@@ -189,6 +208,7 @@ export default function Home() {
   };
 
   const updateBookmarkStatus = (ids: string[], statusId: string) => {
+    updateReadingStreak();
     const now = new Date().toISOString();
     setBookmarks(prev => prev.map(b => {
         if (ids.includes(b.id)) {
@@ -257,6 +277,12 @@ export default function Home() {
         return bookmark;
       })
     );
+  };
+
+  const resetStreak = () => {
+    setReadingStreak(0);
+    setLastStreakUpdate("");
+    toast({ title: "Reading Streak Reset" });
   };
 
   const FolderList = () => {
@@ -442,7 +468,7 @@ export default function Home() {
         <main className="flex-1 p-4 md:p-6 lg:p-8">
             <Reminders reminders={dueReminders} onDismiss={dismissReminder} />
             <>
-                {activeView === 'dashboard' && <Dashboard bookmarks={bookmarks} readingStatuses={readingStatuses} />}
+                {activeView === 'dashboard' && <Dashboard bookmarks={bookmarks} readingStatuses={readingStatuses} readingStreak={readingStreak} />}
                 {activeView === 'list' && (
                 <BookmarkList 
                     bookmarks={bookmarksInView}
@@ -476,6 +502,7 @@ export default function Home() {
                     auth={{ isLockEnabled, setIsLockEnabled, changePin, isPinSet, checkPin, resetApp }}
                     folders={folders}
                     setFolders={setFolders}
+                    onResetStreak={resetStreak}
                   />
                 )}
             </>

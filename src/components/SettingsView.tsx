@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { Bookmark, ReadingStatus, BackupData, ThemeName, SortPreset, AuthProps, Folder } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
-import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History, Lock, KeyRound, HelpCircle } from "lucide-react";
+import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History, Lock, KeyRound, HelpCircle, Flame } from "lucide-react";
 import { format } from 'date-fns';
 import { Input } from './ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
@@ -33,6 +33,7 @@ interface SettingsViewProps {
     auth: AuthProps;
     folders: Folder[];
     setFolders: (folders: Folder[] | ((prev: Folder[]) => Folder[])) => void;
+    onResetStreak: () => void;
 }
 
 const themes: { name: ThemeName, label: string, icon: React.FC<any> }[] = [
@@ -56,7 +57,8 @@ export default function SettingsView({
     onDeleteTag,
     auth,
     folders,
-    setFolders
+    setFolders,
+    onResetStreak
 }: SettingsViewProps) {
     const { toast } = useToast();
     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -541,6 +543,32 @@ export default function SettingsView({
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction onClick={handleRestoreAutoBackup}>Restore</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                    <div className="flex items-center gap-4 p-4 border rounded-lg">
+                        <Flame className="h-6 w-6 text-muted-foreground" />
+                        <div className="flex-1">
+                            <h3 className="font-semibold">Reading Streak</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Reset your current reading streak.
+                            </p>
+                        </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="secondary">Reset Streak</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Reset Reading Streak?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                       Are you sure you want to reset your reading streak back to zero?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={onResetStreak}>Reset</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
