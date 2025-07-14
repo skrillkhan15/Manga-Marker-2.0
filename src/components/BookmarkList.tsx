@@ -1,10 +1,10 @@
 
 "use client";
-import React, { useState, useMemo } from 'react';
-import type { Bookmark, SortOrder, ViewLayout, ReadingStatus, BookmarkHistory } from "@/types";
+import React, { useState, useMemo, useEffect } from 'react';
+import type { Bookmark, SortOrder, ViewLayout, ReadingStatus, BookmarkHistory, SortPreset } from "@/types";
 import BookmarkCard from "./BookmarkCard";
 import BookmarkListItem from './BookmarkListItem';
-import { BookOpenCheck, SearchX, Trash2, CheckCircle2, ChevronDown, Filter, LayoutGrid, List, Star, Tags, Book, ChevronsUpDown, Rows } from "lucide-react";
+import { BookOpenCheck, SearchX, Trash2, CheckCircle2, ChevronDown, Filter, LayoutGrid, List, Star, Tags, Book, ChevronsUpDown, Rows, Save, Settings2, X, PlusCircle } from "lucide-react";
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Button } from './ui/button';
@@ -13,17 +13,20 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Checkbox } from './ui/checkbox';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
-import { X } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { BookmarkSheet } from './BookmarkSheet';
 import { BookmarkDialog } from './BookmarkDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface BookmarkListProps {
   bookmarks: Bookmark[];
   readingStatuses: ReadingStatus[];
+  sortPresets: SortPreset[];
+  setSortPresets: React.Dispatch<React.SetStateAction<SortPreset[]>>;
   onDelete: (ids: string[]) => void;
   onToggleFavorite: (id: string) => void;
   onUpdateChapter: (id: string, newChapter: number) => void;
@@ -33,7 +36,19 @@ interface BookmarkListProps {
   onRevert: (bookmarkId: string, historyEntry: BookmarkHistory) => void;
 }
 
-export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onToggleFavorite, onUpdateChapter, onUpdateStatus, allTags, onEditSubmit, onRevert }: BookmarkListProps) {
+export default function BookmarkList({ 
+    bookmarks, 
+    readingStatuses, 
+    sortPresets,
+    setSortPresets,
+    onDelete, 
+    onToggleFavorite, 
+    onUpdateChapter, 
+    onUpdateStatus, 
+    allTags, 
+    onEditSubmit, 
+    onRevert 
+}: BookmarkListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("lastUpdatedDesc");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -45,6 +60,9 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onT
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPresetDialogOpen, setIsPresetDialogOpen] = useState(false);
+  const [presetName, setPresetName] = useState('');
+  const { toast } = useToast();
   const isMobile = useIsMobile();
 
   const handleEdit = (bookmark: Bookmark) => {
@@ -69,7 +87,6 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onT
   
   const handleRevert = (bookmarkId: string, historyEntry: BookmarkHistory) => {
     onRevert(bookmarkId, historyEntry);
-    // After reverting, we can close the editor as the state is now updated.
     handleEditorClose();
   };
 
@@ -165,6 +182,40 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onT
   const isAnyFilterActive = showFavorites || statusFilter !== 'all' || selectedTags.length > 0;
 
   const currentStatusFilterLabel = statusFilter !== 'all' ? statusesById[statusFilter]?.label : '';
+
+  const savePreset = () => {
+    if (!presetName.trim()) {
+      toast({ title: "Preset name cannot be empty", variant: "destructive" });
+      return;
+    }
+    const newPreset: SortPreset = {
+      id: Date.now().toString(),
+      name: presetName,
+      settings: { searchTerm, sortOrder, selectedTags, showFavorites, statusFilter, layout, isCompact }
+    };
+    setSortPresets(prev => [...prev, newPreset]);
+    toast({ title: `Preset "${presetName}" saved` });
+    setPresetName('');
+    setIsPresetDialogOpen(false);
+  };
+
+  const applyPreset = (preset: SortPreset) => {
+    const { settings } = preset;
+    setSearchTerm(settings.searchTerm);
+    setSortOrder(settings.sortOrder);
+    setSelectedTags(settings.selectedTags);
+    setShowFavorites(settings.showFavorites);
+    setStatusFilter(settings.statusFilter);
+    setLayout(settings.layout);
+    setIsCompact(settings.isCompact);
+    toast({ title: `Preset "${preset.name}" applied` });
+  };
+
+  const deletePreset = (id: string) => {
+    setSortPresets(prev => prev.filter(p => p.id !== id));
+    toast({ title: "Preset deleted" });
+  };
+
 
   return (
     <div className="space-y-6">
@@ -276,6 +327,79 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onT
                 </ToggleGroup>
             </div>
         </div>
+      
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center p-2 bg-muted/30 rounded-lg border">
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Settings2 className="mr-2 h-4 w-4" />
+                Presets
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Saved Presets</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {sortPresets.map(preset => (
+                <DropdownMenuItem key={preset.id} onSelect={() => applyPreset(preset)} className="flex justify-between items-center">
+                  <span>{preset.name}</span>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => e.stopPropagation()}>
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Preset?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete the preset "{preset.name}"? This cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deletePreset(preset.id)}>Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </DropdownMenuItem>
+              ))}
+              {sortPresets.length === 0 && <DropdownMenuItem disabled>No presets saved</DropdownMenuItem>}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => setIsPresetDialogOpen(true)}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Save Current as Preset...
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        <div className="flex items-center space-x-2 ml-auto">
+            <Rows className="h-4 w-4"/>
+            <Label htmlFor="compact-mode">Compact Mode</Label>
+            <Switch id="compact-mode" checked={isCompact} onCheckedChange={setIsCompact} />
+        </div>
+      </div>
+      
+      <AlertDialog open={isPresetDialogOpen} onOpenChange={setIsPresetDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Save View Preset</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Enter a name for the current filter, sort, and view settings.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <Input 
+                placeholder="e.g., Favorite Manhwa"
+                value={presetName}
+                onChange={e => setPresetName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && savePreset()}
+            />
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={savePreset}>Save</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {isAnyFilterActive && (
         <div className="flex flex-wrap items-center gap-2 p-2 bg-muted/30 rounded-lg border">
@@ -338,11 +462,6 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onT
                 </DropdownMenu>
             </div>
            )}
-            <div className="flex items-center space-x-2 ml-auto">
-                <Rows className="h-4 w-4"/>
-                <Label htmlFor="compact-mode">Compact Mode</Label>
-                <Switch id="compact-mode" checked={isCompact} onCheckedChange={setIsCompact} />
-            </div>
          </div>
        )}
 
@@ -409,7 +528,7 @@ export default function BookmarkList({ bookmarks, readingStatuses, onDelete, onT
       ) : (
         <BookmarkDialog
             open={isDialogOpen}
-            onOpenChange={setIsDialogOpen}
+            onOpenChange={handleEditorClose}
             onSubmit={handleEditSave}
             onRevert={handleRevert}
             bookmark={editingBookmark}

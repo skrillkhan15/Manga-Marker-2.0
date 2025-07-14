@@ -4,7 +4,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import type { Bookmark, ReadingStatus, BackupData, ThemeName } from "@/types";
+import type { Bookmark, ReadingStatus, BackupData, ThemeName, SortPreset } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History, Lock } from "lucide-react";
 import { format } from 'date-fns';
@@ -23,6 +23,8 @@ interface SettingsViewProps {
     setBookmarks: (bookmarks: Bookmark[] | ((prev: Bookmark[]) => Bookmark[])) => void;
     readingStatuses: ReadingStatus[];
     setReadingStatuses: (statuses: ReadingStatus[] | ((prev: ReadingStatus[]) => ReadingStatus[])) => void;
+    sortPresets: SortPreset[];
+    setSortPresets: (presets: SortPreset[] | ((prev: SortPreset[]) => SortPreset[])) => void;
     allTags: string[];
     onRenameTag: (oldName: string, newName: string) => void;
     onDeleteTag: (tagName: string) => void;
@@ -37,7 +39,17 @@ const themes: { name: ThemeName, label: string, icon: React.FC<any> }[] = [
     { name: 'ocean', label: 'Ocean', icon: Palette },
 ];
 
-export default function SettingsView({ bookmarks, setBookmarks, readingStatuses, setReadingStatuses, allTags, onRenameTag, onDeleteTag }: SettingsViewProps) {
+export default function SettingsView({ 
+    bookmarks, 
+    setBookmarks, 
+    readingStatuses, 
+    setReadingStatuses, 
+    sortPresets,
+    setSortPresets,
+    allTags, 
+    onRenameTag, 
+    onDeleteTag 
+}: SettingsViewProps) {
     const { toast } = useToast();
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [editingStatus, setEditingStatus] = useState<ReadingStatus | null>(null);
@@ -111,6 +123,7 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
         const dataToExport: BackupData = {
             bookmarks,
             readingStatuses,
+            sortPresets
         };
         let jsonString = JSON.stringify(dataToExport, null, 2);
 
@@ -206,13 +219,13 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
     const parseAndLoadData = (jsonData: string) => {
         const importedData = JSON.parse(jsonData);
         
-        const importedBookmarks = importedData.bookmarks;
-        const importedStatuses = importedData.readingStatuses;
+        const { bookmarks, readingStatuses, sortPresets } = importedData;
 
-        if (Array.isArray(importedBookmarks) && Array.isArray(importedStatuses)) {
-            setBookmarks(importedBookmarks);
-            setReadingStatuses(importedStatuses);
-            toast({ title: "Import Successful", description: "Your bookmarks and statuses have been loaded." });
+        if (Array.isArray(bookmarks) && Array.isArray(readingStatuses)) {
+            setBookmarks(bookmarks);
+            setReadingStatuses(readingStatuses);
+            setSortPresets(sortPresets || []); // Handle presets, even if they don't exist in old backups
+            toast({ title: "Import Successful", description: "Your data has been loaded." });
         } else {
             throw new Error("Invalid backup file format.");
         }
@@ -230,6 +243,7 @@ export default function SettingsView({ bookmarks, setBookmarks, readingStatuses,
                 const backupData: BackupData = JSON.parse(backupDataString);
                 setBookmarks(backupData.bookmarks);
                 setReadingStatuses(backupData.readingStatuses);
+                setSortPresets(backupData.sortPresets || []);
                 toast({ title: "Auto-Backup Restored", description: "Your data has been restored from the latest automatic backup." });
             } catch (error) {
                 toast({ title: "Restore Failed", description: "The automatic backup data seems to be corrupted.", variant: "destructive" });

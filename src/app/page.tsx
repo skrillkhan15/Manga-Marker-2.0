@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import type { Bookmark, View, ReadingStatus, BackupData, BookmarkHistory } from "@/types";
+import type { Bookmark, View, ReadingStatus, BackupData, BookmarkHistory, SortPreset } from "@/types";
 import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarTrigger, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { BookMarked, LayoutDashboard, List, Loader2, Settings } from 'lucide-react';
@@ -28,6 +28,7 @@ const MAX_HISTORY = 5;
 export default function Home() {
   const [bookmarks, setBookmarks] = useLocalStorage<Bookmark[]>("manga-bookmarks", []);
   const [readingStatuses, setReadingStatuses] = useLocalStorage<ReadingStatus[]>("manga-statuses", defaultStatuses);
+  const [sortPresets, setSortPresets] = useLocalStorage<SortPreset[]>("manga-presets", []);
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
@@ -42,13 +43,13 @@ export default function Home() {
     const threeDays = 3 * 24 * 60 * 60 * 1000;
     if (!lastBackup || (now - parseInt(lastBackup, 10)) > threeDays) {
       if (bookmarks.length > 0) {
-        const backupData: BackupData = { bookmarks, readingStatuses };
+        const backupData: BackupData = { bookmarks, readingStatuses, sortPresets };
         localStorage.setItem('mangamarks-autobackup', JSON.stringify(backupData));
         localStorage.setItem('mangamarks-autobackup-timestamp', now.toString());
         console.log('MangaMarks: Performed automatic backup.');
       }
     }
-  }, [bookmarks, readingStatuses]);
+  }, [bookmarks, readingStatuses, sortPresets]);
 
 
   const addOrUpdateBookmark = (bookmark: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'history'>, id?: string) => {
@@ -248,6 +249,8 @@ export default function Home() {
                     <BookmarkList 
                         bookmarks={bookmarks}
                         readingStatuses={readingStatuses}
+                        sortPresets={sortPresets}
+                        setSortPresets={setSortPresets}
                         onDelete={deleteBookmarks}
                         onToggleFavorite={toggleFavorite}
                         onUpdateChapter={updateChapter}
@@ -263,6 +266,8 @@ export default function Home() {
                         setBookmarks={setBookmarks} 
                         readingStatuses={readingStatuses} 
                         setReadingStatuses={setReadingStatuses}
+                        sortPresets={sortPresets}
+                        setSortPresets={setSortPresets}
                         allTags={allTags}
                         onRenameTag={renameTag}
                         onDeleteTag={deleteTag}

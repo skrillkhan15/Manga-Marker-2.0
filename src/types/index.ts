@@ -1,4 +1,5 @@
 
+
 export interface ReadingStatus {
   id: string;
   label: string;
@@ -31,9 +32,24 @@ export type View = 'dashboard' | 'list' | 'settings';
 
 export type ViewLayout = 'grid' | 'list';
 
+export interface SortPreset {
+  id: string;
+  name: string;
+  settings: {
+    searchTerm: string;
+    sortOrder: SortOrder;
+    selectedTags: string[];
+    showFavorites: boolean;
+    statusFilter: string;
+    layout: ViewLayout;
+    isCompact: boolean;
+  };
+}
+
 export interface BackupData {
   bookmarks: Bookmark[];
   readingStatuses: ReadingStatus[];
+  sortPresets?: SortPreset[];
 }
 
 export type ThemeName = 'system' | 'light' | 'dark' | 'mint' | 'sunset' | 'ocean';
