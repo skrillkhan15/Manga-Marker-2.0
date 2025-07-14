@@ -3,10 +3,10 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import type { Bookmark, View, ReadingStatus, BackupData, BookmarkHistory, SortPreset, Folder } from "@/types";
+import type { Bookmark, View, ReadingStatus, BackupData, BookmarkHistory, SortPreset, Folder, ActivityLog } from "@/types";
 import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarTrigger, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarSeparator, SidebarGroup, SidebarGroupLabel, SidebarGroupContent } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { BookMarked, LayoutDashboard, List, Loader2, Settings, Folder as FolderIcon, Plus, Edit2, Trash2, X, MoreVertical, FolderPlus, Check } from 'lucide-react';
+import { BookMarked, LayoutDashboard, List, Loader2, Settings, Folder as FolderIcon, Plus, Edit2, Trash2, X, MoreVertical, FolderPlus, Check, History } from 'lucide-react';
 import BookmarkList from '@/components/BookmarkList';
 import Dashboard from '@/components/Dashboard';
 import SettingsView from '@/components/SettingsView';
@@ -21,6 +21,8 @@ import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Reminders } from '@/components/Reminders';
 import { isPast, isToday, isYesterday, startOfDay } from 'date-fns';
+import { useActivityLog } from '@/hooks/use-activity-log';
+import ActivityLogView from '@/components/ActivityLogView';
 
 const defaultStatuses: ReadingStatus[] = [
     { id: 'reading', label: 'Reading', color: '#3b82f6', icon: '📖' },
@@ -39,6 +41,7 @@ export default function Home() {
   const [folders, setFolders] = useLocalStorage<Folder[]>("manga-folders", []);
   const [readingStreak, setReadingStreak] = useLocalStorage<number>("mangamarks-streak-count", 0);
   const [lastStreakUpdate, setLastStreakUpdate] = useLocalStorage<string>("mangamarks-streak-last-update", "");
+  const { activityLog, addLogEntry, clearLog } = useActivityLog();
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -66,13 +69,13 @@ export default function Home() {
     const threeDays = 3 * 24 * 60 * 60 * 1000;
     if (!lastBackup || (now - parseInt(lastBackup, 10)) > threeDays) {
       if (bookmarks.length > 0) {
-        const backupData: BackupData = { bookmarks, readingStatuses, sortPresets, folders };
+        const backupData: BackupData = { bookmarks, readingStatuses, sortPresets, folders, activityLog };
         localStorage.setItem('mangamarks-autobackup', JSON.stringify(backupData));
         localStorage.setItem('mangamarks-autobackup-timestamp', now.toString());
         console.log('MangaMarks: Performed automatic backup.');
       }
     }
-  }, [bookmarks, readingStatuses, sortPresets, folders]);
+  }, [bookmarks, readingStatuses, sortPresets, folders, activityLog]);
   
   const dueReminders = useMemo(() => {
     const now = new Date();
@@ -137,7 +140,20 @@ export default function Home() {
         const newHistoryEntry: BookmarkHistory = { state: currentState, date: now };
         const updatedHistory = [newHistoryEntry, ...(history || [])].slice(0, MAX_HISTORY);
 
-        return prev.map(b => b.id === id ? { ...b, ...bookmark, history: updatedHistory, lastUpdated: now } : b);
+        const updatedBookmark = { ...b, ...bookmark, history: updatedHistory, lastUpdated: now };
+        
+        let logDescription = `Updated "${updatedBookmark.title}".`;
+        // Create more detailed log for specific changes
+        if (existingBookmark.chapter !== updatedBookmark.chapter) {
+            logDescription = `Set chapter for "${updatedBookmark.title}" to ${updatedBookmark.chapter}.`;
+        } else if (existingBookmark.statusId !== updatedBookmark.statusId) {
+            const oldStatus = readingStatuses.find(s => s.id === existingBookmark.statusId)?.label;
+            const newStatus = readingStatuses.find(s => s.id === updatedBookmark.statusId)?.label;
+            logDescription = `Changed status of "${updatedBookmark.title}" from ${oldStatus} to ${newStatus}.`;
+        }
+        addLogEntry('UPDATE', logDescription, id, updatedBookmark.title);
+
+        return prev.map(b => b.id === id ? updatedBookmark : b);
       } else { // Adding new
         const newBookmark: Bookmark = {
           ...bookmark,
@@ -152,9 +168,11 @@ export default function Home() {
           const titleRoot = newBookmark.title.replace(/ chapter .*/i, '');
           const existingTitleRoot = existing.title.replace(/ chapter .*/i, '');
           if (titleRoot === existingTitleRoot) {
+            addLogEntry('CREATE', `Replaced "${existing.title}" with new chapter from same series.`, existing.id, newBookmark.title);
             return prev.map(b => b.id === existing.id ? { ...newBookmark, id: existing.id } : b);
           }
         }
+        addLogEntry('CREATE', `Added new bookmark: "${newBookmark.title}".`, newBookmark.id, newBookmark.title);
         return [newBookmark, ...prev];
       }
     });
@@ -172,6 +190,8 @@ export default function Home() {
             return b;
         });
     });
+    const logDescription = `Reverted "${historyEntry.state.title}" to a previous version.`;
+    addLogEntry('UPDATE', logDescription, bookmarkId, historyEntry.state.title);
     toast({
         title: "Bookmark Reverted",
         description: `"${historyEntry.state.title}" has been restored to a previous version.`,
@@ -184,19 +204,34 @@ export default function Home() {
     
     setBookmarks(remainingBookmarks);
 
+    bookmarksToDelete.forEach(b => {
+        addLogEntry('DELETE', `Deleted bookmark: "${b.title}".`, b.id, b.title);
+    });
+
     toast({
       title: `${bookmarksToDelete.length} bookmark(s) deleted`,
       description: "You can undo this action.",
       action: (
         <ToastAction altText="Undo" onClick={() => {
             setBookmarks(currentBookmarks => [...bookmarksToDelete, ...currentBookmarks].sort((a,b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()));
+            bookmarksToDelete.forEach(b => {
+                addLogEntry('CREATE', `Restored deleted bookmark: "${b.title}".`, b.id, b.title);
+            });
         }}>Undo</ToastAction>
       ),
     });
   };
 
   const toggleFavorite = (id: string) => {
-    setBookmarks(prev => prev.map(b => b.id === id ? { ...b, isFavorite: !b.isFavorite } : b));
+    setBookmarks(prev => prev.map(b => {
+        if (b.id === id) {
+            const isNowFavorite = !b.isFavorite;
+            const logDescription = isNowFavorite ? `Marked "${b.title}" as a favorite.` : `Removed "${b.title}" from favorites.`;
+            addLogEntry('FAVORITE', logDescription, id, b.title);
+            return { ...b, isFavorite: isNowFavorite };
+        }
+        return b;
+    }));
   };
   
   const updateChapter = (id: string, newChapter: number) => {
@@ -209,9 +244,14 @@ export default function Home() {
 
   const updateBookmarkStatus = (ids: string[], statusId: string) => {
     updateReadingStreak();
+    const newStatusLabel = readingStatuses.find(s => s.id === statusId)?.label || 'a new status';
     const now = new Date().toISOString();
     setBookmarks(prev => prev.map(b => {
         if (ids.includes(b.id)) {
+            const oldStatusLabel = readingStatuses.find(s => s.id === b.statusId)?.label;
+            const logDescription = `Changed status for "${b.title}" from ${oldStatusLabel} to ${newStatusLabel}.`;
+            addLogEntry('STATUS', logDescription, b.id, b.title);
+
             const { history, ...currentState } = b;
             const newHistoryEntry: BookmarkHistory = { state: currentState, date: now };
             const updatedHistory = [newHistoryEntry, ...(history || [])].slice(0, MAX_HISTORY);
@@ -223,8 +263,12 @@ export default function Home() {
 
   const moveBookmarksToFolder = (ids: string[], folderId: string | null) => {
     const now = new Date().toISOString();
+    const folderName = folderId ? (folders.find(f => f.id === folderId)?.name || 'a folder') : 'No Folder';
+
     setBookmarks(prev => prev.map(b => {
         if (ids.includes(b.id)) {
+            const logDescription = `Moved "${b.title}" to folder: ${folderName}.`;
+            addLogEntry('MOVE', logDescription, b.id, b.title);
             return { ...b, folderId: folderId ?? undefined, lastUpdated: now };
         }
         return b;
@@ -446,6 +490,12 @@ export default function Home() {
                 <span className="group-data-[collapsible=icon]:hidden">All Bookmarks</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton onClick={() => setActiveView('activity')} isActive={activeView === 'activity'} tooltip="Activity Log">
+                <History />
+                <span className="group-data-[collapsible=icon]:hidden">Activity</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton onClick={() => setActiveView('settings')} isActive={activeView === 'settings'} tooltip="Settings">
                 <Settings />
@@ -488,6 +538,7 @@ export default function Home() {
                     onClearFolderFilter={() => setSelectedFolderId(null)}
                 />
                 )}
+                {activeView === 'activity' && <ActivityLogView logs={activityLog} onClearLog={clearLog} />}
                 {activeView === 'settings' && (
                   <SettingsView 
                     bookmarks={bookmarks} 
@@ -503,6 +554,8 @@ export default function Home() {
                     folders={folders}
                     setFolders={setFolders}
                     onResetStreak={resetStreak}
+                    activityLog={activityLog}
+                    setActivityLog={setActivityLog}
                   />
                 )}
             </>

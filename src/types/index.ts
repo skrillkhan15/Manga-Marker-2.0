@@ -36,9 +36,20 @@ export interface Bookmark {
   rating?: number; // 0-5 stars
 }
 
+export type ActivityLogType = 'CREATE' | 'UPDATE' | 'DELETE' | 'FAVORITE' | 'STATUS' | 'MOVE';
+
+export interface ActivityLog {
+  id: string;
+  timestamp: string;
+  type: ActivityLogType;
+  description: string;
+  bookmarkId?: string;
+  bookmarkTitle?: string;
+}
+
 export type SortOrder = 'lastUpdatedDesc' | 'lastUpdatedAsc' | 'titleAsc' | 'titleDesc' | 'chapterDesc' | 'chapterAsc' | 'ratingDesc' | 'ratingAsc';
 
-export type View = 'dashboard' | 'list' | 'settings';
+export type View = 'dashboard' | 'list' | 'settings' | 'activity';
 
 export type ViewLayout = 'grid' | 'list';
 
@@ -61,6 +72,7 @@ export interface BackupData {
   readingStatuses: ReadingStatus[];
   sortPresets?: SortPreset[];
   folders?: Folder[];
+  activityLog?: ActivityLog[];
 }
 
 export type ThemeName = 'system' | 'light' | 'dark' | 'mint' | 'sunset' | 'ocean';

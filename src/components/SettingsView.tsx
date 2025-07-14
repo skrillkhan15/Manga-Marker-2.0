@@ -4,7 +4,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import type { Bookmark, ReadingStatus, BackupData, ThemeName, SortPreset, AuthProps, Folder } from "@/types";
+import type { Bookmark, ReadingStatus, BackupData, ThemeName, SortPreset, AuthProps, Folder, ActivityLog } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History, Lock, KeyRound, HelpCircle, Flame } from "lucide-react";
 import { format } from 'date-fns';
@@ -34,6 +34,8 @@ interface SettingsViewProps {
     folders: Folder[];
     setFolders: (folders: Folder[] | ((prev: Folder[]) => Folder[])) => void;
     onResetStreak: () => void;
+    activityLog: ActivityLog[];
+    setActivityLog: (logs: ActivityLog[] | ((prev: ActivityLog[]) => ActivityLog[])) => void;
 }
 
 const themes: { name: ThemeName, label: string, icon: React.FC<any> }[] = [
@@ -58,7 +60,9 @@ export default function SettingsView({
     auth,
     folders,
     setFolders,
-    onResetStreak
+    onResetStreak,
+    activityLog,
+    setActivityLog,
 }: SettingsViewProps) {
     const { toast } = useToast();
     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -139,7 +143,8 @@ export default function SettingsView({
             bookmarks,
             readingStatuses,
             sortPresets,
-            folders
+            folders,
+            activityLog
         };
         let jsonString = JSON.stringify(dataToExport, null, 2);
 
@@ -235,13 +240,14 @@ export default function SettingsView({
     const parseAndLoadData = (jsonData: string) => {
         const importedData = JSON.parse(jsonData);
         
-        const { bookmarks, readingStatuses, sortPresets, folders } = importedData;
+        const { bookmarks, readingStatuses, sortPresets, folders, activityLog } = importedData;
 
         if (Array.isArray(bookmarks) && Array.isArray(readingStatuses)) {
             setBookmarks(bookmarks);
             setReadingStatuses(readingStatuses);
             setSortPresets(sortPresets || []); // Handle presets, even if they don't exist in old backups
             setFolders(folders || []); // Handle folders
+            setActivityLog(activityLog || []); // Handle activity log
             toast({ title: "Import Successful", description: "Your data has been loaded." });
         } else {
             throw new Error("Invalid backup file format.");
@@ -262,6 +268,7 @@ export default function SettingsView({
                 setReadingStatuses(backupData.readingStatuses);
                 setSortPresets(backupData.sortPresets || []);
                 setFolders(backupData.folders || []);
+                setActivityLog(backupData.activityLog || []);
                 toast({ title: "Auto-Backup Restored", description: "Your data has been restored from the latest automatic backup." });
             } catch (error) {
                 toast({ title: "Restore Failed", description: "The automatic backup data seems to be corrupted.", variant: "destructive" });
