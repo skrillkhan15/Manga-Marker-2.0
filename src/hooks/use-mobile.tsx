@@ -1,3 +1,5 @@
+"use client"
+
 import * as React from "react"
 
 const MOBILE_BREAKPOINT = 768
@@ -5,19 +7,20 @@ const MOBILE_BREAKPOINT = 768
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
 
-  const mql = React.useMemo(
-    () => window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`),
-    []
-  );
-
   React.useEffect(() => {
+    // window is only available on the client.
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
+
     const onChange = () => {
       setIsMobile(mql.matches)
     }
+
     mql.addEventListener("change", onChange)
+    // Set the initial value
     setIsMobile(mql.matches)
+
     return () => mql.removeEventListener("change", onChange)
-  }, [mql])
+  }, [])
 
   return isMobile
 }
