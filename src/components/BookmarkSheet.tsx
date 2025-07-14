@@ -147,7 +147,7 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
 
     const dataToSubmit = {
       ...values,
-      folderId: values.folderId || undefined,
+      folderId: values.folderId === '__none__' ? undefined : values.folderId,
       reminderDate,
     };
     onSubmit(dataToSubmit, bookmark?.id);
@@ -347,14 +347,14 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Folder</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                                    <Select onValueChange={field.onChange} value={field.value || '__none__'}>
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="No folder" />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="">No folder</SelectItem>
+                                            <SelectItem value="__none__">No folder</SelectItem>
                                             {folders.map(folder => (
                                                 <SelectItem key={folder.id} value={folder.id}>
                                                     {folder.name}
@@ -481,3 +481,5 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
     </Sheet>
   );
 }
+
+    
