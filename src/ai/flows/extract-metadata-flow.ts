@@ -11,12 +11,12 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-export const ExtractMetadataInputSchema = z.object({
+const ExtractMetadataInputSchema = z.object({
   url: z.string().url().describe('The URL to extract metadata from.'),
 });
 export type ExtractMetadataInput = z.infer<typeof ExtractMetadataInputSchema>;
 
-export const ExtractMetadataOutputSchema = z.object({
+const ExtractMetadataOutputSchema = z.object({
   title: z
     .string()
     .describe(
