@@ -73,7 +73,7 @@ export default function Dashboard({ bookmarks }: DashboardProps) {
                             className="bg-muted"
                         />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm truncate">{bookmark.title}</p>
                         <p className="text-xs text-muted-foreground">Chapter {bookmark.chapter || 0}</p>
                     </div>
