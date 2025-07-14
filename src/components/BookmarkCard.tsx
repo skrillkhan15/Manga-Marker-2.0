@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Edit, Star, Tag, Minus, Plus, Trash2, BookOpen, StickyNote, X, List } from 'lucide-react';
+import { Edit, Star, Tag, Minus, Plus, Trash2, BookOpen, StickyNote, X, List, GripVertical } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -33,9 +33,10 @@ interface BookmarkCardProps {
   isSelected: boolean;
   onSelectionChange: (id: string, isSelected: boolean) => void;
   isCompact: boolean;
+  isManualSortActive?: boolean;
 }
 
-export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, onDelete, isSelected, onSelectionChange, isCompact }: BookmarkCardProps) {
+export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, onDelete, isSelected, onSelectionChange, isCompact, isManualSortActive = false }: BookmarkCardProps) {
     const [lastUpdatedText, setLastUpdatedText] = useState('');
     const cardRef = useRef<HTMLDivElement>(null);
     const longPressTimer = useRef<NodeJS.Timeout>();
@@ -102,22 +103,28 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
         className={cn(
             "flex flex-col bg-background/30 backdrop-blur-lg border shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1 w-full animate-fade-in",
             isSelected ? 'border-primary shadow-primary/30' : 'border-white/20',
-            bookmark.color && 'border-l-4'
+            bookmark.color && !isSelected && 'border-l-4',
+            isManualSortActive && 'cursor-grab active:cursor-grabbing'
         )}
-        style={{ borderColor: bookmark.color }}
+        style={{ borderColor: isSelected ? undefined : bookmark.color }}
         onTouchStart={handlePointerDown}
         onTouchEnd={handlePointerUp}
         onMouseDown={handlePointerDown}
         onMouseUp={handlePointerUp}
         onMouseLeave={handlePointerLeave}
     >
+        {isManualSortActive && (
+          <div className="absolute top-2 left-1 text-muted-foreground/50">
+            <GripVertical className="w-5 h-5" />
+          </div>
+        )}
         <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-2">
             <div className="flex items-center h-full pt-1">
                 <Checkbox
                     checked={isSelected}
                     onCheckedChange={(checked) => onSelectionChange(bookmark.id, !!checked)}
                     aria-label={`Select bookmark ${bookmark.title}`}
-                    className="mr-2"
+                    className={cn("mr-2", isManualSortActive && 'ml-4')}
                 />
             </div>
              {!isCompact && (

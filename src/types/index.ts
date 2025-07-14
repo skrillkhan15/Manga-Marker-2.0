@@ -1,5 +1,4 @@
 
-
 export interface Folder {
   id: string;
   name: string;
@@ -35,6 +34,7 @@ export interface Bookmark {
   reminderDate?: string; // ISO string for the reminder
   rating?: number; // 0-5 stars
   color?: string; // User-assigned color label
+  manualOrder?: number;
 }
 
 export type ActivityLogType = 'CREATE' | 'UPDATE' | 'DELETE' | 'FAVORITE' | 'STATUS' | 'MOVE';
@@ -48,7 +48,7 @@ export interface ActivityLog {
   bookmarkTitle?: string;
 }
 
-export type SortOrder = 'lastUpdatedDesc' | 'lastUpdatedAsc' | 'titleAsc' | 'titleDesc' | 'chapterDesc' | 'chapterAsc' | 'ratingDesc' | 'ratingAsc';
+export type SortOrder = 'manual' | 'lastUpdatedDesc' | 'lastUpdatedAsc' | 'titleAsc' | 'titleDesc' | 'chapterDesc' | 'chapterAsc' | 'ratingDesc' | 'ratingAsc';
 
 export type View = 'dashboard' | 'list' | 'settings' | 'activity';
 
@@ -98,5 +98,3 @@ export interface WeeklySummary {
   seriesUpdated: string[]; // Store bookmark IDs to count unique series
   startDate: string; // ISO string for when the week started
 }
-
-    

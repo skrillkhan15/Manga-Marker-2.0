@@ -169,6 +169,7 @@ export default function Home() {
           id: Date.now().toString(),
           lastUpdated: now,
           isFavorite: false,
+          manualOrder: prev.length,
         };
         // Check for duplicates based on URL
         const existing = prev.find(b => b.url === newBookmark.url);
@@ -534,6 +535,7 @@ export default function Home() {
                 {activeView === 'list' && (
                 <BookmarkList 
                     bookmarks={bookmarksInView}
+                    setBookmarks={setBookmarks}
                     readingStatuses={readingStatuses}
                     sortPresets={sortPresets}
                     setSortPresets={setSortPresets}
@@ -588,5 +590,3 @@ export default function Home() {
     </SidebarProvider>
   );
 }
-
-    

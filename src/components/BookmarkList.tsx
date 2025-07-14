@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import type { Bookmark, SortOrder, ViewLayout, ReadingStatus, BookmarkHistory, SortPreset, Folder, CurrentFilterState } from "@/types";
 import BookmarkCard from "./BookmarkCard";
 import BookmarkListItem from './BookmarkListItem';
-import { BookOpenCheck, SearchX, Trash2, CheckCircle2, ChevronDown, Filter, LayoutGrid, List, Star, Tags, Book, ChevronsUpDown, Rows, Save, Settings2, X, PlusCircle, Folder as FolderIcon, Move } from "lucide-react";
+import { BookOpenCheck, SearchX, Trash2, CheckCircle2, ChevronDown, Filter, LayoutGrid, List, Star, Tags, Book, ChevronsUpDown, Rows, Save, Settings2, X, PlusCircle, Folder as FolderIcon, Move, GripVertical } from "lucide-react";
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Button } from './ui/button';
@@ -22,9 +22,11 @@ import { BookmarkDialog } from './BookmarkDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { StarRating } from './StarRating';
+import { Reorder } from 'framer-motion';
 
 interface BookmarkListProps {
   bookmarks: Bookmark[];
+  setBookmarks: React.Dispatch<React.SetStateAction<Bookmark[]>>;
   readingStatuses: ReadingStatus[];
   sortPresets: SortPreset[];
   setSortPresets: React.Dispatch<React.SetStateAction<SortPreset[]>>;
@@ -44,6 +46,7 @@ interface BookmarkListProps {
 
 export default function BookmarkList({ 
     bookmarks, 
+    setBookmarks,
     readingStatuses, 
     sortPresets,
     setSortPresets,
@@ -76,12 +79,20 @@ export default function BookmarkList({
   const [presetName, setPresetName] = useState('');
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const [localBookmarks, setLocalBookmarks] = useState(bookmarks);
 
   useEffect(() => {
     // When the active folder changes, clear selections and search term
     setSelectedBookmarks([]);
     setSearchTerm('');
   }, [activeFolder]);
+
+  useEffect(() => {
+    // Keep local bookmarks in sync with props, but only if not manual sorting
+    if (sortOrder !== 'manual') {
+      setLocalBookmarks(bookmarks);
+    }
+  }, [bookmarks, sortOrder]);
 
   useEffect(() => {
     // Inform parent about filter state changes
@@ -138,7 +149,7 @@ export default function BookmarkList({
   };
   
   const filteredAndSortedBookmarks = useMemo(() => {
-    let filtered = bookmarks;
+    let filtered = localBookmarks;
 
     if (showFavorites) {
         filtered = filtered.filter(b => b.isFavorite);
@@ -165,6 +176,9 @@ export default function BookmarkList({
     }
     
     return filtered.sort((a, b) => {
+      if (sortOrder === 'manual') {
+        return (a.manualOrder ?? 0) - (b.manualOrder ?? 0);
+      }
       if (a.isFavorite !== b.isFavorite) {
         return a.isFavorite ? -1 : 1;
       }
@@ -188,7 +202,22 @@ export default function BookmarkList({
           return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
       }
     });
-  }, [bookmarks, searchTerm, sortOrder, selectedTags, showFavorites, statusFilter, ratingFilter]);
+  }, [localBookmarks, searchTerm, sortOrder, selectedTags, showFavorites, statusFilter, ratingFilter]);
+
+  const handleReorder = (reorderedBookmarks: Bookmark[]) => {
+    setLocalBookmarks(reorderedBookmarks); // Update local state for smooth animation
+    // Update the main bookmarks state with new manualOrder values
+    const updatedBookmarks = bookmarks.map(bookmark => {
+      const newIndex = reorderedBookmarks.findIndex(b => b.id === bookmark.id);
+      if (newIndex !== -1) {
+        return { ...bookmark, manualOrder: newIndex };
+      }
+      return bookmark;
+    });
+    setBookmarks(updatedBookmarks);
+    toast({ title: "Order saved" });
+  };
+
 
   const toggleSelectAll = () => {
     if (selectedBookmarks.length === filteredAndSortedBookmarks.length) {
@@ -262,6 +291,39 @@ export default function BookmarkList({
   const deletePreset = (id: string) => {
     setSortPresets(prev => prev.filter(p => p.id !== id));
     toast({ title: "Preset deleted" });
+  };
+
+  const ListContainer = (props: React.ComponentProps<typeof Reorder.Group>) => {
+    if (sortOrder === 'manual' && !activeFolder) {
+      return (
+        <Reorder.Group
+          axis="y"
+          values={filteredAndSortedBookmarks}
+          onReorder={handleReorder}
+          className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          {...props}
+        />
+      );
+    }
+    if (layout === 'grid') {
+      return <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" {...props} />;
+    }
+    return <div className="space-y-2" {...props} />;
+  };
+
+  const ListItemContainer = (props: {bookmark: Bookmark, children: React.ReactNode}) => {
+    if (sortOrder === 'manual' && !activeFolder) {
+      return (
+        <Reorder.Item
+          key={props.bookmark.id}
+          value={props.bookmark}
+          className="relative"
+        >
+          {props.children}
+        </Reorder.Item>
+      );
+    }
+    return <React.Fragment key={props.bookmark.id}>{props.children}</React.Fragment>;
   };
 
 
@@ -378,6 +440,7 @@ export default function BookmarkList({
                         <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>
+                        <SelectItem value="manual">Manual Order</SelectItem>
                         <SelectItem value="lastUpdatedDesc">Last Updated (Newest)</SelectItem>
                         <SelectItem value="lastUpdatedAsc">Last Updated (Oldest)</SelectItem>
                         <SelectItem value="titleAsc">Title (A-Z)</SelectItem>
@@ -590,40 +653,40 @@ export default function BookmarkList({
             </>
           )}
         </div>
-      ) : layout === 'grid' ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredAndSortedBookmarks.map((bookmark) => (
-            <BookmarkCard 
-              key={bookmark.id} 
-              bookmark={bookmark}
-              status={statusesById[bookmark.statusId]}
-              onEdit={handleEdit} 
-              onToggleFavorite={onToggleFavorite}
-              onUpdateChapter={onUpdateChapter}
-              onDelete={onDelete}
-              isSelected={selectedBookmarks.includes(bookmark.id)}
-              onSelectionChange={handleSelectionChange}
-              isCompact={isCompact}
-            />
-          ))}
-        </div>
       ) : (
-        <div className="space-y-2">
-           {filteredAndSortedBookmarks.map((bookmark) => (
-            <BookmarkListItem 
-              key={bookmark.id} 
-              bookmark={bookmark} 
-              status={statusesById[bookmark.statusId]}
-              onEdit={handleEdit} 
-              onToggleFavorite={onToggleFavorite}
-              onUpdateChapter={onUpdateChapter}
-              onDelete={onDelete}
-              isSelected={selectedBookmarks.includes(bookmark.id)}
-              onSelectionChange={handleSelectionChange}
-              isCompact={isCompact}
-            />
+        <ListContainer>
+          {filteredAndSortedBookmarks.map((bookmark) => (
+             <ListItemContainer key={bookmark.id} bookmark={bookmark}>
+              {layout === 'grid' ? (
+                <BookmarkCard 
+                  bookmark={bookmark}
+                  status={statusesById[bookmark.statusId]}
+                  onEdit={handleEdit} 
+                  onToggleFavorite={onToggleFavorite}
+                  onUpdateChapter={onUpdateChapter}
+                  onDelete={onDelete}
+                  isSelected={selectedBookmarks.includes(bookmark.id)}
+                  onSelectionChange={handleSelectionChange}
+                  isCompact={isCompact}
+                  isManualSortActive={sortOrder === 'manual' && !activeFolder}
+                />
+              ) : (
+                <BookmarkListItem 
+                  bookmark={bookmark} 
+                  status={statusesById[bookmark.statusId]}
+                  onEdit={handleEdit} 
+                  onToggleFavorite={onToggleFavorite}
+                  onUpdateChapter={onUpdateChapter}
+                  onDelete={onDelete}
+                  isSelected={selectedBookmarks.includes(bookmark.id)}
+                  onSelectionChange={handleSelectionChange}
+                  isCompact={isCompact}
+                  isManualSortActive={sortOrder === 'manual' && !activeFolder}
+                />
+              )}
+            </ListItemContainer>
           ))}
-        </div>
+        </ListContainer>
       )}
       {isMobile ? (
          <BookmarkSheet 

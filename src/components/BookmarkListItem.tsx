@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
-import { Edit, Star, Tag, Minus, Plus, BookOpen, StickyNote, X, List, Palette, Trash2 } from 'lucide-react';
+import { Edit, Star, Tag, Minus, Plus, BookOpen, StickyNote, X, List, Palette, Trash2, GripVertical } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import type { Bookmark, ReadingStatus } from "@/types";
 import { Checkbox } from './ui/checkbox';
@@ -28,9 +28,10 @@ interface BookmarkListItemProps {
   isSelected: boolean;
   onSelectionChange: (id: string, isSelected: boolean) => void;
   isCompact: boolean;
+  isManualSortActive?: boolean;
 }
 
-export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, onDelete, isSelected, onSelectionChange, isCompact }: BookmarkListItemProps) {
+export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, onDelete, isSelected, onSelectionChange, isCompact, isManualSortActive = false }: BookmarkListItemProps) {
   const lastUpdatedText = formatDistanceToNow(new Date(bookmark.lastUpdated), { addSuffix: true });
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -77,15 +78,21 @@ export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFav
         className={cn(
             "flex items-center gap-4 p-2 rounded-lg border transition-colors w-full animate-fade-in",
             isSelected ? 'bg-muted/80 border-primary' : 'bg-muted/30 hover:bg-muted/60',
-            bookmark.color && 'border-l-4'
+            bookmark.color && !isSelected && 'border-l-4',
+            isManualSortActive && 'cursor-grab active:cursor-grabbing'
         )}
-        style={{ borderColor: bookmark.color }}
+        style={{ borderColor: isSelected ? undefined : bookmark.color }}
         onTouchStart={handlePointerDown}
         onTouchEnd={handlePointerUp}
         onMouseDown={handlePointerDown}
         onMouseUp={handlePointerUp}
         onMouseLeave={handlePointerLeave}
     >
+        {isManualSortActive && (
+          <div className="text-muted-foreground/50">
+            <GripVertical className="w-5 h-5" />
+          </div>
+        )}
         <Checkbox
             checked={isSelected}
             onCheckedChange={(checked) => onSelectionChange(bookmark.id, !!checked)}
