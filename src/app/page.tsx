@@ -23,6 +23,7 @@ import { Reminders } from '@/components/Reminders';
 import { isPast, isToday, isYesterday, startOfDay } from 'date-fns';
 import { useActivityLog } from '@/hooks/use-activity-log';
 import ActivityLogView from '@/components/ActivityLogView';
+import { useWeeklySummary } from '@/hooks/use-weekly-summary';
 
 const defaultStatuses: ReadingStatus[] = [
     { id: 'reading', label: 'Reading', color: '#3b82f6', icon: '📖' },
@@ -42,6 +43,7 @@ export default function Home() {
   const [readingStreak, setReadingStreak] = useLocalStorage<number>("mangamarks-streak-count", 0);
   const [lastStreakUpdate, setLastStreakUpdate] = useLocalStorage<string>("mangamarks-streak-last-update", "");
   const { activityLog, addLogEntry, clearLog } = useActivityLog();
+  const { weeklySummary, incrementChapters, addSeriesUpdate, resetSummary } = useWeeklySummary();
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -147,12 +149,18 @@ export default function Home() {
         // Create more detailed log for specific changes
         if (existingBookmark.chapter !== updatedBookmark.chapter) {
             logDescription = `Set chapter for "${updatedBookmark.title}" to ${updatedBookmark.chapter}.`;
+            // Track chapter changes for weekly summary
+            const chapterDiff = (updatedBookmark.chapter || 0) - (existingBookmark.chapter || 0);
+            if (chapterDiff > 0) {
+                incrementChapters(chapterDiff);
+            }
         } else if (existingBookmark.statusId !== updatedBookmark.statusId) {
             const oldStatus = readingStatuses.find(s => s.id === existingBookmark.statusId)?.label;
             const newStatus = readingStatuses.find(s => s.id === updatedBookmark.statusId)?.label;
             logDescription = `Changed status of "${updatedBookmark.title}" from ${oldStatus} to ${newStatus}.`;
         }
         addLogEntry('UPDATE', logDescription, id, updatedBookmark.title);
+        addSeriesUpdate(id);
 
         return prev.map(b => b.id === id ? updatedBookmark : b);
       } else { // Adding new
@@ -229,6 +237,7 @@ export default function Home() {
             const isNowFavorite = !b.isFavorite;
             const logDescription = isNowFavorite ? `Marked "${b.title}" as a favorite.` : `Removed "${b.title}" from favorites.`;
             addLogEntry('FAVORITE', logDescription, id, b.title);
+            addSeriesUpdate(id);
             return { ...b, isFavorite: isNowFavorite };
         }
         return b;
@@ -252,6 +261,7 @@ export default function Home() {
             const oldStatusLabel = readingStatuses.find(s => s.id === b.statusId)?.label;
             const logDescription = `Changed status for "${b.title}" from ${oldStatusLabel} to ${newStatusLabel}.`;
             addLogEntry('STATUS', logDescription, b.id, b.title);
+            addSeriesUpdate(b.id);
 
             const { history, ...currentState } = b;
             const newHistoryEntry: BookmarkHistory = { state: currentState, date: now };
@@ -270,6 +280,7 @@ export default function Home() {
         if (ids.includes(b.id)) {
             const logDescription = `Moved "${b.title}" to folder: ${folderName}.`;
             addLogEntry('MOVE', logDescription, b.id, b.title);
+            addSeriesUpdate(b.id);
             return { ...b, folderId: folderId ?? undefined, lastUpdated: now };
         }
         return b;
@@ -519,7 +530,7 @@ export default function Home() {
         <main className="flex-1 p-4 md:p-6 lg:p-8">
             <Reminders reminders={dueReminders} onDismiss={dismissReminder} />
             <>
-                {activeView === 'dashboard' && <Dashboard bookmarks={bookmarks} readingStatuses={readingStatuses} readingStreak={readingStreak} />}
+                {activeView === 'dashboard' && <Dashboard bookmarks={bookmarks} readingStatuses={readingStatuses} readingStreak={readingStreak} weeklySummary={weeklySummary} />}
                 {activeView === 'list' && (
                 <BookmarkList 
                     bookmarks={bookmarksInView}
@@ -559,6 +570,7 @@ export default function Home() {
                     activityLog={activityLog}
                     setActivityLog={setActivityLog}
                     currentFilterState={currentFilterState}
+                    onResetWeeklySummary={resetSummary}
                   />
                 )}
             </>
@@ -576,3 +588,5 @@ export default function Home() {
     </SidebarProvider>
   );
 }
+
+    

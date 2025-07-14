@@ -92,3 +92,11 @@ export interface AuthProps {
     checkPin: (pin: string) => Promise<boolean>;
     resetApp: () => void;
 }
+
+export interface WeeklySummary {
+  chaptersRead: number;
+  seriesUpdated: string[]; // Store bookmark IDs to count unique series
+  startDate: string; // ISO string for when the week started
+}
+
+    

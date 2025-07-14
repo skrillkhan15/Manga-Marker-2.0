@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { Bookmark, ReadingStatus, BackupData, ThemeName, SortPreset, AuthProps, Folder, ActivityLog, CurrentFilterState } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
-import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History, Lock, KeyRound, HelpCircle, Flame, Bug } from "lucide-react";
+import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History, Lock, KeyRound, HelpCircle, Flame, Bug, RefreshCcw } from "lucide-react";
 import { format } from 'date-fns';
 import { Input } from './ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
@@ -36,6 +36,7 @@ interface SettingsViewProps {
     folders: Folder[];
     setFolders: (folders: Folder[] | ((prev: Folder[]) => Folder[])) => void;
     onResetStreak: () => void;
+    onResetWeeklySummary: () => void;
     activityLog: ActivityLog[];
     setActivityLog: (logs: ActivityLog[] | ((prev: ActivityLog[]) => ActivityLog[])) => void;
     currentFilterState: CurrentFilterState | null;
@@ -64,6 +65,7 @@ export default function SettingsView({
     folders,
     setFolders,
     onResetStreak,
+    onResetWeeklySummary,
     activityLog,
     setActivityLog,
     currentFilterState,
@@ -559,6 +561,35 @@ export default function SettingsView({
                             </AlertDialogContent>
                         </AlertDialog>
                     </div>
+                     <div className="flex items-center gap-4 p-4 border rounded-lg">
+                        <RefreshCcw className="h-6 w-6 text-muted-foreground" />
+                        <div className="flex-1">
+                            <h3 className="font-semibold">Reset Weekly Summary</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Start a new week of tracking now.
+                            </p>
+                        </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="secondary">Reset Now</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Reset Weekly Summary?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                       Are you sure you want to reset your weekly reading summary? This will start a new 7-day tracking period from today.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => {
+                                        onResetWeeklySummary();
+                                        toast({ title: "Weekly Summary Reset" });
+                                    }}>Reset</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                     <div className="flex items-center gap-4 p-4 border rounded-lg">
                         <Flame className="h-6 w-6 text-muted-foreground" />
                         <div className="flex-1">
@@ -825,3 +856,5 @@ export default function SettingsView({
         </div>
     );
 }
+
+    

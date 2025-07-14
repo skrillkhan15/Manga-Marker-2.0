@@ -1,9 +1,9 @@
 
 "use client"
 
-import type { Bookmark, ReadingStatus } from "@/types";
+import type { Bookmark, ReadingStatus, WeeklySummary } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
-import { BookMarked, Star, Tag, TrendingUp, History, Heart, Flame } from "lucide-react";
+import { BookMarked, Star, TrendingUp, History, Heart, Flame, BookOpen } from "lucide-react";
 import { useMemo } from "react";
 import Image from 'next/image';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
@@ -14,9 +14,10 @@ interface DashboardProps {
     bookmarks: Bookmark[];
     readingStatuses: ReadingStatus[];
     readingStreak: number;
+    weeklySummary: WeeklySummary;
 }
 
-export default function Dashboard({ bookmarks, readingStatuses, readingStreak }: DashboardProps) {
+export default function Dashboard({ bookmarks, readingStatuses, readingStreak, weeklySummary }: DashboardProps) {
 
     const { stats, recentlyUpdated, favoritesList, chartConfig, chartData } = useMemo(() => {
         const total = bookmarks.length;
@@ -150,7 +151,7 @@ export default function Dashboard({ bookmarks, readingStatuses, readingStreak }:
                 </Card>
             </div>
             
-             <div className="grid gap-6 md:grid-cols-2">
+             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -185,6 +186,28 @@ export default function Dashboard({ bookmarks, readingStatuses, readingStreak }:
                                 <p>Mark some bookmarks as favorites!</p>
                             </div>
                         )}
+                    </CardContent>
+                </Card>
+                <Card className="lg:col-span-1">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <BookOpen className="w-5 h-5" />
+                            This Week's Journal
+                        </CardTitle>
+                        <CardDescription>Your reading summary for this week.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4 text-center">
+                        <div className="space-y-1">
+                            <p className="text-3xl font-bold">{weeklySummary.chaptersRead}</p>
+                            <p className="text-sm text-muted-foreground">New chapters read</p>
+                        </div>
+                        <div className="space-y-1">
+                             <p className="text-3xl font-bold">{weeklySummary.seriesUpdated.length}</p>
+                            <p className="text-sm text-muted-foreground">Series updated</p>
+                        </div>
+                         <p className="text-xs text-muted-foreground pt-4">
+                            Week started on {new Date(weeklySummary.startDate).toLocaleDateString()}
+                        </p>
                     </CardContent>
                 </Card>
              </div>
