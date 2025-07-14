@@ -21,6 +21,7 @@ import { Switch } from './ui/switch';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import useLocalStorage from '@/hooks/use-local-storage';
 import { DebugPanel } from './DebugPanel';
+import { triggerHapticFeedback } from '@/lib/haptics';
 
 interface SettingsViewProps {
     bookmarks: Bookmark[];
@@ -111,6 +112,7 @@ export default function SettingsView({
     };
 
     const handleThemeChange = (newTheme: ThemeName) => {
+        triggerHapticFeedback();
         const currentThemeName = document.body.dataset.themeName;
         if (currentThemeName) {
             document.body.classList.remove(`theme-${currentThemeName}`);
@@ -856,5 +858,3 @@ export default function SettingsView({
         </div>
     );
 }
-
-    

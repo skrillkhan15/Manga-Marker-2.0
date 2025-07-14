@@ -22,6 +22,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { StarRating } from './StarRating';
 import { cn } from '@/lib/utils';
+import { triggerHapticFeedback } from '@/lib/haptics';
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -74,6 +75,7 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
     
     const handlePointerDown = () => {
         longPressTimer.current = setTimeout(() => {
+            triggerHapticFeedback();
             onSelectionChange(bookmark.id, true);
         }, 500); // 500ms for long press
     };
@@ -88,6 +90,7 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
 
     const handleFavoriteSwipe = () => {
         onToggleFavorite(bookmark.id);
+        triggerHapticFeedback();
         toast({
             title: bookmark.isFavorite ? "Removed from Favorites" : "Added to Favorites",
             description: `"${bookmark.title}" updated.`,
@@ -95,8 +98,24 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
     };
 
     const handleDeleteSwipe = () => {
+        triggerHapticFeedback();
         onDelete([bookmark.id]);
     };
+    
+    const handleFavoriteClick = () => {
+        triggerHapticFeedback();
+        onToggleFavorite(bookmark.id);
+    }
+    
+    const handlePinClick = () => {
+        triggerHapticFeedback();
+        onTogglePinned(bookmark.id);
+    }
+
+    const handleChapterUpdate = (newChapter: number) => {
+        triggerHapticFeedback();
+        onUpdateChapter(bookmark.id, newChapter);
+    }
 
   const cardContent = (
     <Card 
@@ -149,6 +168,7 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
                         layout="fill"
                         objectFit="cover"
                         className="bg-muted"
+                        loading="lazy"
                     />
                     {status && (
                         <Tooltip>
@@ -179,20 +199,20 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
                     )}
                 </Tooltip>
                 <div className="flex items-center gap-2 mt-2">
-                    <Button variant="outline" size="icon" className="w-7 h-7" onClick={() => onUpdateChapter(bookmark.id, (bookmark.chapter || 0) - 1)} disabled={(bookmark.chapter || 0) <= 0}>
+                    <Button variant="outline" size="icon" className="w-7 h-7" onClick={() => handleChapterUpdate((bookmark.chapter || 0) - 1)} disabled={(bookmark.chapter || 0) <= 0}>
                         <Minus className="w-4 h-4" />
                     </Button>
                     <span className="text-sm font-semibold w-10 text-center">Ch. {bookmark.chapter || 0}</span>
-                    <Button variant="outline" size="icon" className="w-7 h-7" onClick={() => onUpdateChapter(bookmark.id, (bookmark.chapter || 0) + 1)}>
+                    <Button variant="outline" size="icon" className="w-7 h-7" onClick={() => handleChapterUpdate((bookmark.chapter || 0) + 1)}>
                         <Plus className="w-4 h-4" />
                     </Button>
                 </div>
             </div>
             <div className="flex flex-col items-center space-y-1">
-                <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0" onClick={() => onToggleFavorite(bookmark.id)}>
+                <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0" onClick={handleFavoriteClick}>
                     <Star className={`w-5 h-5 transition-colors ${bookmark.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
                 </Button>
-                <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0" onClick={() => onTogglePinned(bookmark.id)}>
+                <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0" onClick={handlePinClick}>
                    {bookmark.isPinned ? <PinOff className="w-4 h-4 text-primary" /> : <Pin className="w-4 h-4" />}
                 </Button>
                 <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0" onClick={() => onEdit(bookmark)}>
