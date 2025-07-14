@@ -559,7 +559,7 @@ export default function Home() {
                     sortPresets={sortPresets}
                     setSortPresets={setSortPresets}
                     onDelete={deleteBookmarks}
-                    onToggleFavorite={onToggleFavorite}
+                    onToggleFavorite={toggleFavorite}
                     onTogglePinned={togglePinned}
                     onUpdateChapter={updateChapter}
                     onUpdateStatus={updateBookmarkStatus}
