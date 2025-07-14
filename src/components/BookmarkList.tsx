@@ -33,10 +33,11 @@ interface BookmarkListProps {
   folders: Folder[];
   onDelete: (ids: string[]) => void;
   onToggleFavorite: (id: string) => void;
+  onTogglePinned: (id: string) => void;
   onUpdateChapter: (id: string, newChapter: number) => void;
   onUpdateStatus: (ids: string[], statusId: string) => void;
   allTags: string[];
-  onEditSubmit: (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'history'>, id?: string) => void;
+  onEditSubmit: (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'isPinned' | 'history'>, id?: string) => void;
   onRevert: (bookmarkId: string, historyEntry: BookmarkHistory) => void;
   onMoveToFolder: (ids: string[], folderId: string | null) => void;
   activeFolder?: Folder;
@@ -53,6 +54,7 @@ export default function BookmarkList({
     folders,
     onDelete, 
     onToggleFavorite, 
+    onTogglePinned,
     onUpdateChapter, 
     onUpdateStatus, 
     allTags, 
@@ -125,7 +127,7 @@ export default function BookmarkList({
     setIsDialogOpen(false);
   };
 
-  const handleEditSave = (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'history'>, id?: string) => {
+  const handleEditSave = (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'isPinned' | 'history'>, id?: string) => {
     onEditSubmit(data, id);
     handleEditorClose();
   };
@@ -176,6 +178,9 @@ export default function BookmarkList({
     }
     
     return filtered.sort((a, b) => {
+      if (a.isPinned !== b.isPinned) {
+        return a.isPinned ? -1 : 1;
+      }
       if (sortOrder === 'manual') {
         return (a.manualOrder ?? 0) - (b.manualOrder ?? 0);
       }
@@ -663,6 +668,7 @@ export default function BookmarkList({
                   status={statusesById[bookmark.statusId]}
                   onEdit={handleEdit} 
                   onToggleFavorite={onToggleFavorite}
+                  onTogglePinned={onTogglePinned}
                   onUpdateChapter={onUpdateChapter}
                   onDelete={onDelete}
                   isSelected={selectedBookmarks.includes(bookmark.id)}
@@ -676,6 +682,7 @@ export default function BookmarkList({
                   status={statusesById[bookmark.statusId]}
                   onEdit={handleEdit} 
                   onToggleFavorite={onToggleFavorite}
+                  onTogglePinned={onTogglePinned}
                   onUpdateChapter={onUpdateChapter}
                   onDelete={onDelete}
                   isSelected={selectedBookmarks.includes(bookmark.id)}

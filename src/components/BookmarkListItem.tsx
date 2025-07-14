@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
-import { Edit, Star, Tag, Minus, Plus, BookOpen, StickyNote, X, List, Palette, Trash2, GripVertical } from 'lucide-react';
+import { Edit, Star, Tag, Minus, Plus, BookOpen, StickyNote, X, List, Palette, Trash2, GripVertical, PinOff, Pin } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import type { Bookmark, ReadingStatus } from "@/types";
 import { Checkbox } from './ui/checkbox';
@@ -23,6 +23,7 @@ interface BookmarkListItemProps {
   status?: ReadingStatus;
   onEdit: (bookmark: Bookmark) => void;
   onToggleFavorite: (id: string) => void;
+  onTogglePinned: (id: string) => void;
   onUpdateChapter: (id: string, newChapter: number) => void;
   onDelete: (ids: string[]) => void;
   isSelected: boolean;
@@ -31,7 +32,7 @@ interface BookmarkListItemProps {
   isManualSortActive?: boolean;
 }
 
-export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, onDelete, isSelected, onSelectionChange, isCompact, isManualSortActive = false }: BookmarkListItemProps) {
+export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFavorite, onTogglePinned, onUpdateChapter, onDelete, isSelected, onSelectionChange, isCompact, isManualSortActive = false }: BookmarkListItemProps) {
   const lastUpdatedText = formatDistanceToNow(new Date(bookmark.lastUpdated), { addSuffix: true });
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -76,7 +77,7 @@ export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFav
       <div 
         ref={itemRef}
         className={cn(
-            "flex items-center gap-4 p-2 rounded-lg border transition-colors w-full animate-fade-in",
+            "flex items-center gap-4 p-2 rounded-lg border transition-colors w-full animate-fade-in relative",
             isSelected ? 'bg-muted/80 border-primary' : 'bg-muted/30 hover:bg-muted/60',
             bookmark.color && !isSelected && 'border-l-4',
             isManualSortActive && 'cursor-grab active:cursor-grabbing'
@@ -88,6 +89,18 @@ export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFav
         onMouseUp={handlePointerUp}
         onMouseLeave={handlePointerLeave}
     >
+        {bookmark.isPinned && (
+           <Tooltip>
+             <TooltipTrigger asChild>
+                <div className="absolute top-1 left-1 text-muted-foreground">
+                    <Pin className="w-3.5 h-3.5 text-primary fill-primary" />
+                </div>
+             </TooltipTrigger>
+             <TooltipContent>
+                <p>Pinned</p>
+             </TooltipContent>
+           </Tooltip>
+        )}
         {isManualSortActive && (
           <div className="text-muted-foreground/50">
             <GripVertical className="w-5 h-5" />
@@ -193,6 +206,9 @@ export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFav
             <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0" onClick={() => onToggleFavorite(bookmark.id)}>
                 <Star className={`w-5 h-5 transition-colors ${bookmark.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
             </Button>
+             <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0" onClick={() => onTogglePinned(bookmark.id)}>
+                   {bookmark.isPinned ? <PinOff className="w-4 h-4 text-primary" /> : <Pin className="w-4 h-4" />}
+             </Button>
             <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0" onClick={() => onEdit(bookmark)}>
                 <Edit className="w-4 h-4" />
             </Button>

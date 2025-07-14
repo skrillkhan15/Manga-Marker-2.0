@@ -24,6 +24,7 @@ export interface Bookmark {
   lastUpdated: string;
   tags?: string[];
   isFavorite: boolean;
+  isPinned?: boolean;
   coverImage?: string; // Base64 encoded image data URL
   chapter?: number;
   totalChapters?: number;

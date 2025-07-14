@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Edit, Star, Tag, Minus, Plus, Trash2, BookOpen, StickyNote, X, List, GripVertical } from 'lucide-react';
+import { Edit, Star, Tag, Minus, Plus, Trash2, BookOpen, StickyNote, X, List, GripVertical, Pin, PinOff } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -28,6 +28,7 @@ interface BookmarkCardProps {
   status?: ReadingStatus;
   onEdit: (bookmark: Bookmark) => void;
   onToggleFavorite: (id: string) => void;
+  onTogglePinned: (id: string) => void;
   onUpdateChapter: (id: string, newChapter: number) => void;
   onDelete: (ids: string[]) => void;
   isSelected: boolean;
@@ -36,7 +37,7 @@ interface BookmarkCardProps {
   isManualSortActive?: boolean;
 }
 
-export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorite, onUpdateChapter, onDelete, isSelected, onSelectionChange, isCompact, isManualSortActive = false }: BookmarkCardProps) {
+export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorite, onTogglePinned, onUpdateChapter, onDelete, isSelected, onSelectionChange, isCompact, isManualSortActive = false }: BookmarkCardProps) {
     const [lastUpdatedText, setLastUpdatedText] = useState('');
     const cardRef = useRef<HTMLDivElement>(null);
     const longPressTimer = useRef<NodeJS.Timeout>();
@@ -118,6 +119,18 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
             <GripVertical className="w-5 h-5" />
           </div>
         )}
+        {bookmark.isPinned && (
+           <Tooltip>
+             <TooltipTrigger asChild>
+                <div className="absolute top-2 right-2 text-muted-foreground">
+                    <Pin className="w-4 h-4 text-primary fill-primary" />
+                </div>
+             </TooltipTrigger>
+             <TooltipContent>
+                <p>Pinned</p>
+             </TooltipContent>
+           </Tooltip>
+        )}
         <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-2">
             <div className="flex items-center h-full pt-1">
                 <Checkbox
@@ -178,6 +191,9 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
             <div className="flex flex-col items-center space-y-1">
                 <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0" onClick={() => onToggleFavorite(bookmark.id)}>
                     <Star className={`w-5 h-5 transition-colors ${bookmark.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`} />
+                </Button>
+                <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0" onClick={() => onTogglePinned(bookmark.id)}>
+                   {bookmark.isPinned ? <PinOff className="w-4 h-4 text-primary" /> : <Pin className="w-4 h-4" />}
                 </Button>
                 <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0" onClick={() => onEdit(bookmark)}>
                     <Edit className="w-4 h-4" />

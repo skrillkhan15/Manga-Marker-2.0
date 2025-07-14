@@ -133,7 +133,7 @@ export default function Home() {
     toast({ title: "Folder Deleted" });
   };
 
-  const addOrUpdateBookmark = (bookmark: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'history'>, id?: string) => {
+  const addOrUpdateBookmark = (bookmark: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'isPinned' | 'history'>, id?: string) => {
     updateReadingStreak();
     setBookmarks(prev => {
       const now = new Date().toISOString();
@@ -173,6 +173,7 @@ export default function Home() {
           id: Date.now().toString(),
           lastUpdated: now,
           isFavorite: false,
+          isPinned: false,
           manualOrder: prev.length,
         };
         // Check for duplicates based on URL
@@ -244,6 +245,18 @@ export default function Home() {
             addLogEntry('FAVORITE', logDescription, id, b.title);
             addSeriesUpdate(id);
             return { ...b, isFavorite: isNowFavorite };
+        }
+        return b;
+    }));
+  };
+
+  const togglePinned = (id: string) => {
+    setBookmarks(prev => prev.map(b => {
+        if (b.id === id) {
+            const isNowPinned = !b.isPinned;
+            const logDescription = isNowPinned ? `Pinned "${b.title}".` : `Unpinned "${b.title}".`;
+            addLogEntry('UPDATE', logDescription, id, b.title);
+            return { ...b, isPinned: isNowPinned };
         }
         return b;
     }));
@@ -546,7 +559,8 @@ export default function Home() {
                     sortPresets={sortPresets}
                     setSortPresets={setSortPresets}
                     onDelete={deleteBookmarks}
-                    onToggleFavorite={toggleFavorite}
+                    onToggleFavorite={onToggleFavorite}
+                    onTogglePinned={togglePinned}
                     onUpdateChapter={updateChapter}
                     onUpdateStatus={updateBookmarkStatus}
                     allTags={allTags}

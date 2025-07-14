@@ -63,7 +63,7 @@ type BookmarkFormValues = z.infer<typeof formSchema>;
 interface BookmarkDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit: (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'history'>, id?: string) => void;
+    onSubmit: (data: Omit<Bookmark, 'id' | 'lastUpdated' | 'isFavorite' | 'isPinned' | 'history'>, id?: string) => void;
     onRevert: (bookmarkId: string, historyEntry: BookmarkHistory) => void;
     bookmark: Bookmark | null;
     readingStatuses: ReadingStatus[];
