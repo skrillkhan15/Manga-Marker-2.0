@@ -6,6 +6,7 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
   const [storedValue, setStoredValue] = useState<T>(initialValue);
 
   useEffect(() => {
+    // This should only run once on the client after hydration
     try {
       const item = window.localStorage.getItem(key);
       if (item) {
@@ -18,7 +19,8 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
       console.log(error);
       setStoredValue(initialValue);
     }
-  }, [key, initialValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
 
   const setValue = (value: T | ((val: T) => T)) => {
     try {
