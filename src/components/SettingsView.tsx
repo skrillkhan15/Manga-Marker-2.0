@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { Bookmark, ReadingStatus, BackupData, ThemeName, SortPreset, AuthProps } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
-import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History, Lock, KeyRound } from "lucide-react";
+import { Download, Upload, Trash2, Edit, Check, X, Plus, Tag, Palette, Text, Sun, Moon, Laptop, History, Lock, KeyRound, HelpCircle } from "lucide-react";
 import { format } from 'date-fns';
 import { Input } from './ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
@@ -18,6 +18,7 @@ import { Slider } from './ui/slider';
 import { useTheme } from 'next-themes';
 import * as CryptoJS from 'crypto-js';
 import { Switch } from './ui/switch';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 interface SettingsViewProps {
     bookmarks: Bookmark[];
@@ -680,6 +681,48 @@ export default function SettingsView({
                     )}
                 </CardContent>
             </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Help & FAQ</CardTitle>
+                    <CardDescription>Find answers to common questions about using MangaMarks.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="item-1">
+                            <AccordionTrigger>How do I add a new bookmark?</AccordionTrigger>
+                            <AccordionContent>
+                                Click the "Add New Bookmark" button in the top header. You can paste a URL and click the sparkle icon ✨ to try and automatically fill in the title and chapter number. You can also fill in all the details manually, including uploading a custom cover image.
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="item-2">
+                            <AccordionTrigger>How do I edit multiple bookmarks?</AccordionTrigger>
+                            <AccordionContent>
+                                On desktop, you can use the checkboxes to select multiple bookmarks. On mobile, you can long-press a bookmark to enter selection mode. Once you have items selected, a new toolbar will appear at the top of the list allowing you to delete the selected bookmarks or update their status all at once.
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="item-3">
+                            <AccordionTrigger>How do swipe gestures work on mobile?</AccordionTrigger>
+                            <AccordionContent>
+                                In the bookmark list on a mobile device, you can swipe a bookmark to the left to reveal quick actions. Swiping will show buttons to quickly toggle a bookmark as a favorite or to delete it.
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="item-4">
+                            <AccordionTrigger>What if I forget my PIN?</AccordionTrigger>
+                            <AccordionContent>
+                                For security, there is no way to recover a forgotten PIN. You will need to click the "Forgot PIN?" link on the lock screen. This will trigger a full app reset, which will permanently delete all your bookmarks and settings. Be sure to make regular backups.
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="item-5">
+                            <AccordionTrigger>What is the Bookmark History feature?</AccordionTrigger>
+                            <AccordionContent>
+                                Every time you save a change to a bookmark, the app saves a snapshot of its previous state. In the "History" tab of the edit form, you can view these previous versions and revert the bookmark back to an older state if you made a mistake.
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
+                </CardContent>
+            </Card>
+
         </div>
     );
 }

@@ -434,12 +434,20 @@ export default function BookmarkList({
 
        {bookmarks.length > 0 && (
          <div className="flex items-center gap-4 py-2 px-3 bg-muted/30 rounded-lg border flex-wrap">
-           <Button variant="outline" size="sm" onClick={toggleSelectAll}>
-             {selectedBookmarks.length === filteredAndSortedBookmarks.length ? 'Deselect All' : `Select All (${filteredAndSortedBookmarks.length})`}
-           </Button>
-           <span className="text-sm text-muted-foreground">{selectedBookmarks.length} selected</span>
+           <div className="flex items-center gap-2">
+                <Checkbox
+                    id="select-all-checkbox"
+                    checked={selectedBookmarks.length > 0 && selectedBookmarks.length === filteredAndSortedBookmarks.length}
+                    onCheckedChange={toggleSelectAll}
+                    aria-label="Select all bookmarks"
+                />
+                <Label htmlFor="select-all-checkbox" className="text-sm font-medium">
+                    {selectedBookmarks.length > 0 ? `${selectedBookmarks.length} selected` : 'Select All'}
+                </Label>
+           </div>
+           
            {selectedBookmarks.length > 0 && (
-             <div className="flex items-center gap-2">
+             <div className="flex items-center gap-2 animate-fade-in">
                 <Button variant="destructive" size="sm" onClick={handleDelete}>
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete
