@@ -26,5 +26,5 @@ export function useActivityLog() {
         setActivityLog([]);
     };
 
-    return { activityLog, addLogEntry, clearLog };
+    return { activityLog, setActivityLog, addLogEntry, clearLog };
 }

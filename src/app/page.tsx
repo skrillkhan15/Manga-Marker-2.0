@@ -44,7 +44,7 @@ export default function Home() {
   const [folders, setFolders] = useLocalStorage<Folder[]>("manga-folders", []);
   const [readingStreak, setReadingStreak] = useLocalStorage<number>("mangamarks-streak-count", 0);
   const [lastStreakUpdate, setLastStreakUpdate] = useLocalStorage<string>("mangamarks-streak-last-update", "");
-  const { activityLog, addLogEntry, clearLog } = useActivityLog();
+  const { activityLog, addLogEntry, clearLog, setActivityLog } = useActivityLog();
   const { weeklySummary, incrementChapters, addSeriesUpdate, resetSummary } = useWeeklySummary();
   const { dailySummary, incrementChaptersToday } = useDailySummary();
   const [activeView, setActiveView] = useState<View>('dashboard');
