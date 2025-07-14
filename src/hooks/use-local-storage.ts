@@ -1,36 +1,72 @@
+
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
 
-function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
-  const [storedValue, setStoredValue] = useState<T>(initialValue);
+// A helper function to determine if running on the server
+const isServer = typeof window === 'undefined';
 
+// A wrapper for JSON.parse that handles errors
+function safelyParseJSON<T>(json: string | null, fallback: T): T {
+  if (!json) return fallback;
+  try {
+    return JSON.parse(json);
+  } catch (e) {
+    console.error("Failed to parse JSON from localStorage", e);
+    return fallback;
+  }
+}
+
+function useLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<SetStateAction<T>>] {
+  // The `useState` initializer function will only be executed on the initial render.
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    if (isServer) {
+      return initialValue;
+    }
+    const item = window.localStorage.getItem(key);
+    return safelyParseJSON(item, initialValue);
+  });
+
+  // The `setValue` function is now stable and doesn't depend on `storedValue`
+  // from its closure, preventing stale state issues. It uses the function
+  // form of a state setter to get the latest state.
+  const setValue: Dispatch<SetStateAction<T>> = useCallback(
+    (value) => {
+      setStoredValue((currentValue) => {
+        // Allow value to be a function so we have the same API as useState
+        const valueToStore = value instanceof Function ? value(currentValue) : value;
+
+        // Save to local storage
+        if (!isServer) {
+          try {
+            window.localStorage.setItem(key, JSON.stringify(valueToStore));
+          } catch (error) {
+            console.error(`Error setting localStorage key "${key}":`, error);
+          }
+        }
+        
+        return valueToStore;
+      });
+    },
+    [key]
+  );
+  
+  // This effect synchronizes the state if the localStorage is changed in another tab.
   useEffect(() => {
-    // This effect runs once on mount to get the value from localStorage.
-    if (typeof window === 'undefined') {
-      return;
-    }
-    try {
-      const item = window.localStorage.getItem(key);
-      if (item) {
-        setStoredValue(JSON.parse(item));
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  }, [key]);
+    if (isServer) return;
 
-  const setValue = useCallback((value: T | ((val: T) => T)) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === key && event.newValue) {
+        setStoredValue(safelyParseJSON(event.newValue, initialValue));
       }
-    } catch (error) {
-      console.log(error);
-    }
-  }, [key, storedValue]);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [key, initialValue]);
+
 
   return [storedValue, setValue];
 }
