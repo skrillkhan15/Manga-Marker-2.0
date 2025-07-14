@@ -4,7 +4,7 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 import { Button } from "@/components/ui/button"
@@ -77,8 +77,10 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
       notes: "",
     },
   });
+  
+  const urlValue = form.watch('url');
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (bookmark) {
       form.reset({
         title: bookmark.title,
@@ -103,6 +105,18 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
       setCoverPreview(null);
     }
   }, [bookmark, form, open]);
+
+  useEffect(() => {
+    if (urlValue) {
+      const match = urlValue.match(/(?:[/-]|chapter(?:-|_))(\d+(?:\.\d+)?)(?=[/?#]|$)/i);
+      if (match && match[1]) {
+        const chapterNumber = parseFloat(match[1]);
+        if (!isNaN(chapterNumber)) {
+          form.setValue('chapter', chapterNumber, { shouldValidate: true });
+        }
+      }
+    }
+  }, [urlValue, form]);
 
   const handleFormSubmit = (values: BookmarkFormValues) => {
     onSubmit(values, bookmark?.id);
@@ -210,6 +224,9 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, bookmark }: Bookm
                   <FormControl>
                     <Input placeholder="https://.../chapter-123" {...field} />
                   </FormControl>
+                  <FormDescription>
+                    The chapter number will be detected automatically.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
