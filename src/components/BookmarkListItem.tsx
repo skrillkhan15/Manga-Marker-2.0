@@ -99,9 +99,18 @@ export default function BookmarkListItem({ bookmark, status, onEdit, onToggleFav
         )}
         <div className="flex-1 grid grid-cols-4 gap-4 items-center">
             <div className="flex flex-col col-span-2">
-                <a href={bookmark.url} target="_blank" rel="noopener noreferrer" className="font-semibold hover:underline truncate" title={bookmark.title}>
-                    {bookmark.title}
-                </a>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <a href={bookmark.url} target="_blank" rel="noopener noreferrer" className="font-semibold hover:underline truncate" title={bookmark.title}>
+                           {bookmark.alias || bookmark.title}
+                        </a>
+                    </TooltipTrigger>
+                     {bookmark.alias && (
+                        <TooltipContent>
+                            <p>{bookmark.title}</p>
+                        </TooltipContent>
+                    )}
+                </Tooltip>
                 {progress !== null ? (
                     <div className="flex items-center gap-2 mt-1">
                         <Progress value={progress} className="h-1.5 w-24" />

@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { addDays, formatISO } from "date-fns";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -38,6 +39,7 @@ import { formatDistanceToNow } from "date-fns";
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title cannot be empty." }),
+  alias: z.string().optional(),
   url: z.string().url({ message: "Please enter a valid URL." }),
   chapter: z.coerce.number().min(0).optional(),
   totalChapters: z.coerce.number().min(0).optional(),
@@ -46,6 +48,7 @@ const formSchema = z.object({
   statusId: z.string({ required_error: "Please select a status." }),
   notes: z.string().optional(),
   folderId: z.string().optional(),
+  reminderDays: z.coerce.number().min(0).optional(),
 });
 
 type BookmarkFormValues = z.infer<typeof formSchema>;
@@ -69,6 +72,7 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
+      alias: "",
       url: "",
       chapter: 0,
       totalChapters: 0,
@@ -77,6 +81,7 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
       statusId: readingStatuses[0]?.id || "plan-to-read",
       notes: "",
       folderId: "",
+      reminderDays: 0,
     },
   });
   
@@ -85,6 +90,7 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
       if (bookmark) {
         form.reset({
           title: bookmark.title,
+          alias: bookmark.alias || "",
           url: bookmark.url,
           chapter: bookmark.chapter || 0,
           totalChapters: bookmark.totalChapters || 0,
@@ -93,11 +99,13 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
           statusId: bookmark.statusId || readingStatuses[0]?.id,
           notes: bookmark.notes || "",
           folderId: bookmark.folderId || "",
+          reminderDays: 0,
         });
         setCoverPreview(bookmark.coverImage || null);
       } else {
         form.reset({
           title: "",
+          alias: "",
           url: "",
           chapter: 0,
           totalChapters: 0,
@@ -106,6 +114,7 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
           statusId: readingStatuses.find(s => s.id === 'plan-to-read')?.id || readingStatuses[0]?.id,
           notes: "",
           folderId: "",
+          reminderDays: 0,
         });
         setCoverPreview(null);
       }
@@ -127,9 +136,14 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
   }, [urlValue, form]);
 
   const handleFormSubmit = (values: BookmarkFormValues) => {
+    const reminderDate = values.reminderDays && values.reminderDays > 0
+      ? formatISO(addDays(new Date(), values.reminderDays))
+      : undefined;
+
     const dataToSubmit = {
       ...values,
       folderId: values.folderId || undefined,
+      reminderDate,
     };
     onSubmit(dataToSubmit, bookmark?.id);
     onOpenChange(false);
@@ -236,6 +250,22 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
                         <FormMessage />
                         </FormItem>
                     )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="alias"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Alias (Optional)</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g., Solo Lvl" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                                A shorter name for display in lists.
+                            </FormDescription>
+                            <FormMessage />
+                            </FormItem>
+                        )}
                     />
                     <FormField
                     control={form.control}
@@ -375,6 +405,22 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
                             </FormControl>
                             <FormMessage />
                         </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="reminderDays"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Set a reminder (in days)</FormLabel>
+                            <FormControl>
+                                <Input type="number" placeholder="e.g., 7 for one week" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
+                            </FormControl>
+                            <FormDescription>
+                                Leave at 0 to not set a reminder.
+                            </FormDescription>
+                            <FormMessage />
+                            </FormItem>
                         )}
                     />
                     <SheetFooter className="pt-4 flex flex-row justify-end">

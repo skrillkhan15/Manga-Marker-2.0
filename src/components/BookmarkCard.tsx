@@ -137,11 +137,20 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
              )}
 
             <div className="flex-1">
-                 <CardTitle className="text-lg leading-tight">
-                    <a href={bookmark.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                        {bookmark.title}
-                    </a>
-                 </CardTitle>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <CardTitle className="text-lg leading-tight">
+                            <a href={bookmark.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                {bookmark.alias || bookmark.title}
+                            </a>
+                        </CardTitle>
+                    </TooltipTrigger>
+                    {bookmark.alias && (
+                        <TooltipContent>
+                            <p>{bookmark.title}</p>
+                        </TooltipContent>
+                    )}
+                </Tooltip>
                 <div className="flex items-center gap-2 mt-2">
                     <Button variant="outline" size="icon" className="w-7 h-7" onClick={() => onUpdateChapter(bookmark.id, (bookmark.chapter || 0) - 1)} disabled={(bookmark.chapter || 0) <= 0}>
                         <Minus className="w-4 h-4" />

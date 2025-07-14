@@ -41,6 +41,7 @@ import { formatDistanceToNow } from "date-fns";
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title cannot be empty." }),
+  alias: z.string().optional(),
   url: z.string().url({ message: "Please enter a valid URL." }),
   chapter: z.coerce.number().min(0).optional(),
   totalChapters: z.coerce.number().min(0).optional(),
@@ -75,6 +76,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
+      alias: "",
       url: "",
       chapter: 0,
       totalChapters: 0,
@@ -92,6 +94,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
       if (bookmark) {
         form.reset({
           title: bookmark.title,
+          alias: bookmark.alias || "",
           url: bookmark.url,
           chapter: bookmark.chapter || 0,
           totalChapters: bookmark.totalChapters || 0,
@@ -106,6 +109,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
       } else {
         form.reset({
           title: "",
+          alias: "",
           url: "",
           chapter: 0,
           totalChapters: 0,
@@ -300,6 +304,22 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
                       <FormControl>
                         <Input placeholder="e.g., Solo Leveling" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="alias"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Alias (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Solo Lvl" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        A shorter name for display in lists.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

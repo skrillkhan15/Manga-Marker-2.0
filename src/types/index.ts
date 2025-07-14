@@ -20,6 +20,7 @@ export interface BookmarkHistory {
 export interface Bookmark {
   id:string;
   title: string;
+  alias?: string;
   url: string;
   lastUpdated: string;
   tags?: string[];
