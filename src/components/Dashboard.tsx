@@ -17,7 +17,7 @@ interface DashboardProps {
 
 export default function Dashboard({ bookmarks, readingStatuses }: DashboardProps) {
 
-    const { stats, recentlyUpdated, favoritesList, chartConfig } = useMemo(() => {
+    const { stats, recentlyUpdated, favoritesList, chartConfig, chartData } = useMemo(() => {
         const total = bookmarks.length;
         const favoritesCount = bookmarks.filter(b => b.isFavorite).length;
         const tags = new Set<string>();
@@ -51,10 +51,11 @@ export default function Dashboard({ bookmarks, readingStatuses }: DashboardProps
 
 
         return { 
-            stats: { total, favorites: favoritesCount, uniqueTags, latestUpdate, chartData },
+            stats: { total, favorites: favoritesCount, uniqueTags, latestUpdate },
             recentlyUpdated,
             favoritesList,
-            chartConfig
+            chartConfig,
+            chartData
         };
     }, [bookmarks, readingStatuses]);
 
@@ -88,12 +89,16 @@ export default function Dashboard({ bookmarks, readingStatuses }: DashboardProps
     );
 
     const CustomXAxisTick = ({ x, y, payload }: any) => {
-        const { value, icon } = payload.payload;
+        // Find the full chart data item that corresponds to this tick's value.
+        const dataItem = chartData.find(item => item.name === payload.value);
+        if (!dataItem) return null;
+
+        const { name, icon } = dataItem;
         return (
             <g transform={`translate(${x},${y})`}>
-                <text x={0} y={0} dy={16} textAnchor="middle" fill="#888888" fontSize={12}>
-                    {icon && <tspan className="text-lg" x={-10}>{icon}</tspan>}
-                    <tspan x={icon ? 5 : 0}>{value}</tspan>
+                <text x={0} y={0} dy={16} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={12}>
+                    {icon && <tspan className="text-lg" x={-12} y="2">{icon}</tspan>}
+                    <tspan x={icon ? 10 : 0}>{name}</tspan>
                 </text>
             </g>
         );
@@ -190,9 +195,9 @@ export default function Dashboard({ bookmarks, readingStatuses }: DashboardProps
                 <CardContent>
                     {bookmarks.length > 0 ? (
                         <ChartContainer config={chartConfig} className="h-64 w-full">
-                            <BarChart accessibilityLayer data={stats.chartData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
-                                <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tick={<CustomXAxisTick />} />
-                                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                            <BarChart accessibilityLayer data={chartData} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+                                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tick={<CustomXAxisTick />} height={40} />
+                                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                                 <Tooltip
                                     cursor={false}
                                     content={<ChartTooltipContent hideLabel />}
@@ -210,3 +215,5 @@ export default function Dashboard({ bookmarks, readingStatuses }: DashboardProps
         </div>
     )
 }
+
+    
