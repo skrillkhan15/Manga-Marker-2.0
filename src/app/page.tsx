@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import useLocalStorage from '@/hooks/use-local-storage';
-import type { Bookmark, View, ReadingStatus, BackupData, BookmarkHistory, SortPreset, Folder, ActivityLog, CurrentFilterState } from "@/types";
+import type { Bookmark, View, ReadingStatus, BackupData, BookmarkHistory, SortPreset, Folder, ActivityLog, CurrentFilterState, AuthProps } from "@/types";
 import { SidebarProvider, Sidebar, SidebarInset, SidebarContent, SidebarTrigger, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarSeparator, SidebarGroup, SidebarGroupLabel, SidebarGroupContent } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { BookMarked, LayoutDashboard, List, Loader2, Settings, Folder as FolderIcon, Plus, Edit2, Trash2, X, MoreVertical, FolderPlus, Check, History } from 'lucide-react';
@@ -66,6 +66,15 @@ export default function Home() {
     isPinSet,
     checkPin,
   } = useAuthLock();
+  
+  const auth: AuthProps = {
+    isLockEnabled,
+    setIsLockEnabled,
+    isPinSet,
+    changePin,
+    checkPin,
+    resetApp,
+  };
 
   useEffect(() => {
     setIsMounted(true);
