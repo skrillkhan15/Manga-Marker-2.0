@@ -7,8 +7,6 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { addDays, formatISO } from "date-fns";
-import { extractMetadata } from '@/ai/flows/extract-metadata-flow';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -41,6 +39,7 @@ import { StarRating } from "./StarRating";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { ColorPicker } from "./ColorPicker";
 import { useToast } from "@/hooks/use-toast";
+import { addDays, formatISO } from "date-fns";
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title cannot be empty." }),
@@ -164,13 +163,26 @@ export function BookmarkSheet({ open, onOpenChange, onSubmit, onRevert, bookmark
     
     setIsFetching(true);
     try {
-      const { title, chapter } = await extractMetadata({ url });
-      form.setValue('title', title, { shouldValidate: true });
-      form.setValue('chapter', chapter, { shouldValidate: true });
-      toast({
-        title: "Metadata Extracted!",
-        description: "Title and chapter have been filled in.",
+      const response = await fetch('/api/extract-metadata', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
       });
+
+      if (response.ok) {
+        const { title, chapter } = await response.json();
+        form.setValue('title', title, { shouldValidate: true });
+        form.setValue('chapter', chapter, { shouldValidate: true });
+        toast({
+          title: "Metadata Extracted!",
+          description: "Title and chapter have been filled in.",
+        });
+      } else {
+        const errorData = await response.json();
+         throw new Error(errorData.error || 'Failed to fetch metadata');
+      }
     } catch (error) {
       console.error("Failed to fetch metadata:", error);
       toast({

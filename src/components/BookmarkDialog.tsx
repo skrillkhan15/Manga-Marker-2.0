@@ -6,9 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { extractMetadata } from '@/ai/flows/extract-metadata-flow';
 import { addDays, formatISO } from 'date-fns';
+import Image from 'next/image';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -164,7 +163,14 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
     
     setIsFetching(true);
     try {
-      const { title, chapter } = await extractMetadata({ url });
+      const response = await fetch('/api/extract-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const { title, chapter, error } = await response.json();
+      if (!response.ok || error) throw new Error(error || 'Failed to extract metadata');
+      
       form.setValue('title', title, { shouldValidate: true });
       form.setValue('chapter', chapter, { shouldValidate: true });
       toast({
@@ -279,7 +285,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
                         </FormControl>
                         {coverPreview && (
                             <div className="mt-4 relative w-32 h-48 mx-auto rounded-md overflow-hidden">
-                               <Image src={coverPreview} alt="Cover preview" layout="fill" objectFit="cover" />
+                               <Image src={coverPreview} alt="Cover preview" fill style={{ objectFit: 'cover' }} />
                             </div>
                         )}
                         <FormMessage />
@@ -438,6 +444,7 @@ export function BookmarkDialog({ open, onOpenChange, onSubmit, onRevert, bookmar
                                 <PopoverTrigger asChild>
                                     <FormControl>
                                         <Button
+                                            type="button"
                                             variant="outline"
                                             className="w-full justify-start text-left font-normal"
                                         >

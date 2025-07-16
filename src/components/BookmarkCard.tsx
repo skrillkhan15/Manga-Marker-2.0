@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Edit, Star, Tag, Minus, Plus, Trash2, BookOpen, StickyNote, X, List, GripVertical, Pin, PinOff } from 'lucide-react';
+import { Edit, Star, Tag, Minus, Plus, StickyNote, GripVertical, Pin, PinOff } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import type { Bookmark, ReadingStatus } from "@/types";
 import { Checkbox } from './ui/checkbox';
 import { Badge } from './ui/badge';
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { Progress } from './ui/progress';
 import { SwipeArea } from './SwipeArea';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -81,11 +81,11 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
     };
 
     const handlePointerUp = () => {
-        clearTimeout(longPressTimer.current);
+        if(longPressTimer.current) clearTimeout(longPressTimer.current);
     };
 
     const handlePointerLeave = () => {
-        clearTimeout(longPressTimer.current);
+        if(longPressTimer.current) clearTimeout(longPressTimer.current);
     };
 
     const handleFavoriteSwipe = () => {
@@ -123,10 +123,10 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
         className={cn(
             "flex flex-col bg-background/30 backdrop-blur-lg border shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1 w-full animate-fade-in",
             isSelected ? 'border-primary shadow-primary/30' : 'border-white/20',
-            bookmark.color && !isSelected && 'border-l-4',
+            bookmark.color && !isSelected ? 'border-l-4' : 'border-l-transparent',
             isManualSortActive && 'cursor-grab active:cursor-grabbing'
         )}
-        style={{ borderColor: isSelected ? undefined : bookmark.color }}
+        style={{ borderLeftColor: isSelected ? undefined : bookmark.color }}
         onTouchStart={handlePointerDown}
         onTouchEnd={handlePointerUp}
         onMouseDown={handlePointerDown}
@@ -139,6 +139,7 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
           </div>
         )}
         {bookmark.isPinned && (
+          <TooltipProvider>
            <Tooltip>
              <TooltipTrigger asChild>
                 <div className="absolute top-2 right-2 text-muted-foreground">
@@ -149,6 +150,7 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
                 <p>Pinned</p>
              </TooltipContent>
            </Tooltip>
+          </TooltipProvider>
         )}
         <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-2">
             <div className="flex items-center h-full pt-1">
@@ -165,12 +167,13 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
                         src={bookmark.coverImage || `https://placehold.co/128x192.png`} 
                         alt={`Cover for ${bookmark.title}`}
                         data-ai-hint="manga cover"
-                        layout="fill"
-                        objectFit="cover"
-                        className="bg-muted"
+                        width={128}
+                        height={192}
+                        className="bg-muted object-cover"
                         loading="lazy"
                     />
                     {status && (
+                      <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <div className="absolute bottom-0 left-0 right-0 h-1" style={{ backgroundColor: status.color }}></div>
@@ -179,11 +182,13 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
                                 <p>{status.label}</p>
                             </TooltipContent>
                         </Tooltip>
+                      </TooltipProvider>
                     )}
                 </div>
              )}
 
             <div className="flex-1">
+              <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <CardTitle asChild>
@@ -198,6 +203,7 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
                         </TooltipContent>
                     )}
                 </Tooltip>
+              </TooltipProvider>
                 <div className="flex items-center gap-2 mt-2">
                     <Button variant="outline" size="icon" className="w-7 h-7" onClick={() => handleChapterUpdate((bookmark.chapter || 0) - 1)} disabled={(bookmark.chapter || 0) <= 0}>
                         <Minus className="w-4 h-4" />
@@ -236,6 +242,7 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
         </p>
         {(bookmark.tags && bookmark.tags.length > 0) || bookmark.notes ? (
           <div className="flex items-start gap-1.5 flex-wrap">
+            <TooltipProvider>
              {bookmark.tags && bookmark.tags.length > 0 && (
                  <Tooltip>
                     <TooltipTrigger className="flex items-center gap-1.5 flex-wrap">
@@ -260,6 +267,7 @@ export default function BookmarkCard({ bookmark, status, onEdit, onToggleFavorit
                     </TooltipContent>
                 </Tooltip>
              )}
+            </TooltipProvider>
           </div>
         ) : null}
       </CardContent>

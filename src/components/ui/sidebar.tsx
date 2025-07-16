@@ -41,7 +41,7 @@ const SidebarContext = React.createContext<SidebarContext | null>(null)
 function useSidebar() {
   const context = React.useContext(SidebarContext)
   if (!context) {
-    throw new Error("useSidebar must be used within a SidebarProvider.")
+    throw new Error("useSidebar must be used within a SidebarProvider")
   }
 
   return context
@@ -119,9 +119,9 @@ const SidebarProvider = React.forwardRef<
     const contextValue = React.useMemo<SidebarContext>(
       () => ({
         state,
-        open,
+        open: open,
         setOpen,
-        isMobile,
+        isMobile: isMobile ?? false,
         openMobile,
         setOpenMobile,
         toggleSidebar,

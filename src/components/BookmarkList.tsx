@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import type { Bookmark, SortOrder, ViewLayout, ReadingStatus, BookmarkHistory, SortPreset, Folder, CurrentFilterState } from "@/types";
 import BookmarkCard from "./BookmarkCard";
 import BookmarkListItem from './BookmarkListItem';
-import { BookOpenCheck, SearchX, Trash2, CheckCircle2, ChevronDown, Filter, LayoutGrid, List, Star, Tags, Book, ChevronsUpDown, Rows, Save, Settings2, X, PlusCircle, Folder as FolderIcon, Move, GripVertical } from "lucide-react";
+import { BookOpenCheck, SearchX, Trash2, CheckCircle2, ChevronDown, Filter, LayoutGrid, List, Star, Tags, Book, ChevronsUpDown, Rows, Save, Settings2, X, PlusCircle, Folder as FolderIcon, Move } from "lucide-react";
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Button } from './ui/button';
@@ -92,11 +92,8 @@ export default function BookmarkList({
   }, [activeFolder]);
 
   useEffect(() => {
-    // Keep local bookmarks in sync with props, but only if not manual sorting
-    if (sortOrder !== 'manual') {
-      setLocalBookmarks(bookmarks);
-    }
-  }, [bookmarks, sortOrder]);
+    setLocalBookmarks(bookmarks);
+  }, [bookmarks]);
 
   useEffect(() => {
     // Inform parent about filter state changes
@@ -153,7 +150,7 @@ export default function BookmarkList({
   };
   
   const filteredAndSortedBookmarks = useMemo(() => {
-    let filtered = localBookmarks;
+    let filtered = [...localBookmarks];
 
     if (showFavorites) {
         filtered = filtered.filter(b => b.isFavorite);
@@ -212,11 +209,10 @@ export default function BookmarkList({
     });
   }, [localBookmarks, searchTerm, sortOrder, selectedTags, showFavorites, statusFilter, ratingFilter]);
 
-  const handleReorder = (reorderedBookmarks: Bookmark[]) => {
-    setLocalBookmarks(reorderedBookmarks); // Update local state for smooth animation
-    // Update the main bookmarks state with new manualOrder values
+  const handleReorder = (reorderedItems: Bookmark[]) => {
+    setLocalBookmarks(reorderedItems); // Update local state for smooth animation
     const updatedBookmarks = allBookmarks.map(bookmark => {
-      const newIndex = reorderedBookmarks.findIndex(b => b.id === bookmark.id);
+      const newIndex = reorderedItems.findIndex(b => b.id === bookmark.id);
       if (newIndex !== -1) {
         return { ...bookmark, manualOrder: newIndex };
       }
@@ -302,22 +298,23 @@ export default function BookmarkList({
     toast({ title: "Preset deleted" });
   };
 
-  const ListContainer = (props: React.ComponentProps<typeof Reorder.Group>) => {
+  const ListContainer = (props: { children: React.ReactNode }) => {
     if (sortOrder === 'manual' && !activeFolder) {
       return (
         <Reorder.Group
           axis="y"
           values={filteredAndSortedBookmarks}
           onReorder={handleReorder}
-          className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-          {...props}
-        />
+          className={layout === 'grid' ? "grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "space-y-2"}
+        >
+          {props.children}
+        </Reorder.Group>
       );
     }
     if (layout === 'grid') {
-      return <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" {...props} />;
+      return <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{props.children}</div>;
     }
-    return <div className="space-y-2" {...props} />;
+    return <div className="space-y-2">{props.children}</div>;
   };
 
   const ListItemContainer = (props: {bookmark: Bookmark, children: React.ReactNode}) => {
