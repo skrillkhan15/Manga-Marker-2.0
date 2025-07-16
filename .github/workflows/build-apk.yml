@@ -39,16 +39,18 @@ jobs:
       - name: Install Bubblewrap CLI globally
         run: npm install -g @bubblewrap/cli@1.23.0
 
-      - name: Build APK with Bubblewrap (force no prompt)
+      - name: Build APK with Bubblewrap
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
           PATH: /usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH
         run: |
-          yes no | bubblewrap build \
+          bubblewrap build \
             --manifest twa-manifest.json \
             --directory out \
             --output ./build \
-            --no-install
+            --jdkPath=/usr/lib/jvm/java-17-openjdk-amd64 \
+            --no-install \
+            --no-prompt
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
