@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v3
 
       - name: Setup Node.js with cache
@@ -31,8 +31,13 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Install Bubblewrap globally
-        run: npm install -g @bubblewrap/cli@1.23.0
+      - name: Check /bin/sh
+        shell: bash
+        run: ls -l /bin/sh
+
+      - name: Test npx
+        shell: bash
+        run: npx --version
 
       - name: Build APK with Bubblewrap
         shell: bash
@@ -42,12 +47,7 @@ jobs:
         run: |
           echo "JAVA_HOME=$JAVA_HOME"
           java -version
-          bubblewrap build \
-            --manifest twa-manifest.json \
-            --directory out \
-            --output ./build \
-            --no-install \
-            --no-input
+          bubblewrap build --manifest twa-manifest.json --directory out --output ./build --no-install --no-input
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
