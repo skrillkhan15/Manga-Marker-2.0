@@ -39,12 +39,12 @@ jobs:
       - name: Install Bubblewrap CLI globally
         run: npm install -g @bubblewrap/cli@1.23.0
 
-      - name: Build APK with Bubblewrap (auto answer prompt)
+      - name: Build APK with Bubblewrap (force no prompt)
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
           PATH: /usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH
         run: |
-          echo "no" | bubblewrap build \
+          yes no | bubblewrap build \
             --manifest twa-manifest.json \
             --directory out \
             --output ./build \
