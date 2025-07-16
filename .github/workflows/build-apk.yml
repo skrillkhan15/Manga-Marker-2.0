@@ -44,7 +44,12 @@ jobs:
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
           PATH: $JAVA_HOME/bin:$PATH
-        run: npx --yes @bubblewrap/cli@1.23.0 build --manifest twa-manifest.json --directory out --output ./build --no-install
+        run: |
+          npx --yes @bubblewrap/cli@1.23.0 build \
+            --manifest twa-manifest.json \
+            --directory out \
+            --output ./build \
+            --no-install
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
