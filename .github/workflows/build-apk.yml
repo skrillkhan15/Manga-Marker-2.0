@@ -41,13 +41,13 @@ jobs:
           PATH: /usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH
         run: |
           echo "JAVA_HOME=$JAVA_HOME"
-          echo "Java version:"
           java -version
           bubblewrap build \
             --manifest twa-manifest.json \
             --directory out \
             --output ./build \
-            --no-install
+            --no-install \
+            --no-input
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
