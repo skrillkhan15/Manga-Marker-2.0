@@ -29,21 +29,7 @@ export default function RootLayout({
         <link rel="icon" href="/icons/icon-192x192.png" sizes="192x192" type="image/png" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="theme-color" content="#111111" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js').then(registration => {
-                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                  }, err => {
-                    console.log('ServiceWorker registration failed: ', err);
-                  });
-                });
-              }
-            `,
-          }}
-        />
+        <link rel="manifest" href="/manifest.json" />
       </head>
       <body className="font-body antialiased min-h-screen" suppressHydrationWarning={true}>
         <ThemeProvider
@@ -55,6 +41,17 @@ export default function RootLayout({
           {children}
           <Toaster />
         </ThemeProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js');
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
