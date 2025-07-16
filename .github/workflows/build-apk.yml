@@ -31,13 +31,8 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Check /bin/sh
-        shell: bash
-        run: ls -l /bin/sh
-
-      - name: Test npx
-        shell: bash
-        run: npx --version
+      - name: Install Bubblewrap CLI globally
+        run: npm install -g @bubblewrap/cli
 
       - name: Build APK with Bubblewrap
         shell: bash
