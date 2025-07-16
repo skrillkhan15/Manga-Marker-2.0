@@ -22,8 +22,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Next.js (with static export)
-        run: npm run build
+      - name: Build Next.js static export
+        run: npm run build && npm run export
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
@@ -39,7 +39,7 @@ jobs:
       - name: Install Bubblewrap CLI globally
         run: npm install -g @bubblewrap/cli@1.23.0
 
-      - name: Build APK with Bubblewrap
+      - name: Build APK with Bubblewrap (non-interactive)
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
           PATH: /usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH
@@ -48,7 +48,6 @@ jobs:
             --manifest twa-manifest.json \
             --directory out \
             --output ./build \
-            --jdkPath=/usr/lib/jvm/java-17-openjdk-amd64 \
             --no-install \
             --no-prompt
 
