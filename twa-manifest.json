@@ -1,0 +1,26 @@
+{
+  "packageId": "com.skrillkhan.mangamarker",
+  "host": "skrillkhan15.github.io",
+  "name": "Manga Marker",
+  "shortName": "MangaMarker",
+  "startUrl": "/Manga-Marker-2.0/",
+  "display": "standalone",
+  "themeColor": "#0070f3",
+  "backgroundColor": "#ffffff",
+  "icons": [
+    {
+      "src": "public/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "public/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "orientation": "portrait-primary",
+  "navigationColor": "#0070f3",
+  "navigationColorDark": "#0051a3",
+  "fallbackType": "customtabs"
+}
