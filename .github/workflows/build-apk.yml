@@ -25,8 +25,14 @@ jobs:
         run: npm run build
 
       - name: Install Bubblewrap CLI
-        run: npm install -g @bubblewrap/cli
+        run: npm install -g @bubblewrap/cli@latest
+
+      - name: Check Bubblewrap version
+        run: bubblewrap --version
 
       - name: Build APK with Bubblewrap
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+          PATH: $JAVA_HOME/bin:$PATH
         run: |
           bubblewrap build --manifest twa-manifest.json --directory out --output ./build --no-install
