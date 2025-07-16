@@ -10,13 +10,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -24,11 +25,11 @@ jobs:
       - name: Build Next.js static export
         run: npm run build
 
-      - name: Set up JDK 17 explicitly (optional)
+      - name: Set up JDK 17 explicitly
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          distribution: temurin
+          java-version: 17
 
       - name: Build APK with Bubblewrap
         shell: bash
@@ -36,11 +37,10 @@ jobs:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
           PATH: $JAVA_HOME/bin:$PATH
         run: |
-          cd $GITHUB_WORKSPACE
           npx @bubblewrap/cli build --manifest twa-manifest.json --directory out --output ./build --no-install
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: apk
           path: ./build/*.apk
