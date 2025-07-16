@@ -1,7 +1,11 @@
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
+});
 
-// This is a basic service worker for PWA installability.
-// It doesn't do any caching yet.
+self.addEventListener("activate", (event) => {
+  clients.claim();
+});
 
-self.addEventListener('fetch', (event) => {
-  // This empty fetch handler is required to make the app installable.
+self.addEventListener("fetch", (event) => {
+  event.respondWith(fetch(event.request));
 });
