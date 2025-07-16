@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
+      - name: Setup Node.js with cache
         uses: actions/setup-node@v3
         with:
           node-version: '20'
@@ -25,19 +25,26 @@ jobs:
       - name: Build Next.js static export
         run: npm run build
 
-      - name: Set up JDK 17 explicitly
+      - name: Setup JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: 17
+
+      - name: Check /bin/sh
+        shell: bash
+        run: ls -l /bin/sh
+
+      - name: Test npx
+        shell: bash
+        run: npx --version
 
       - name: Build APK with Bubblewrap
         shell: bash
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
           PATH: $JAVA_HOME/bin:$PATH
-        run: |
-          npx @bubblewrap/cli build --manifest twa-manifest.json --directory out --output ./build --no-install
+        run: npx @bubblewrap/cli build --manifest twa-manifest.json --directory out --output ./build --no-install
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v3
