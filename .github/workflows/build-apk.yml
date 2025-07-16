@@ -1,38 +1,41 @@
-name: Build APK
+Run the `build-apk.yml` workflow to verify that the application builds correctly.
+
+```yaml
+name: Build and Deploy APK
 
 on:
   push:
     branches:
-      - main  # change if your default branch is different
+      - main
 
 jobs:
-  build:
+  build-apk:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
         with:
           node-version: 18
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build Next.js static export
-        run: npm run export
+        run: npm run build
 
-      - name: Install Bubblewrap CLI
-        run: npm install -g @bubblewrap/cli
+      - name: Setup TWA
+        run: npm install -g twa-starter
 
-      - name: Build APK with Bubblewrap
+      - name: Configure and Build TWA
         run: |
-          bubblewrap build --manifest twa-manifest.json --output ./build
+          twa-starter --manifest=twa-manifest.json --template=default --signing-key-path=./android-signing-key.jks --signing-key-password=${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }} --signing-key-alias=${{ secrets.ANDROID_SIGNING_KEY_ALIAS }} --package-name=com.yourcompany.yourapp --application-name="Your App Name" --launcher-name="Your App Name" --app-version-code=$(date +%s) --app-version-name=1.0.0 --splash-screen-color="#FFFFFF" --url="https://your-app-url.com" --icon-url="https://your-app-url.com/icons/icon-512x512.png" --maskable-icon-url="https://your-app-url.com/icons/icon-512x512.png" --navigation-color="#FFFFFF" --status-bar-color="#FFFFFF" --web-manifest-url="https://your-app-url.com/manifest.json"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: apk
-          path: ./build/*.apk
+          name: app-release-unsigned
+          path: android-project/app/build/outputs/apk/release/app-release-unsigned.apk
+
+```
