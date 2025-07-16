@@ -35,14 +35,10 @@ jobs:
         run: npm install -g @bubblewrap/cli
 
       - name: Build APK with Bubblewrap
-        shell: bash
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-          PATH: /usr/lib/jvm/java-17-openjdk-amd64/bin:$PATH
-        run: |
-          echo "JAVA_HOME=$JAVA_HOME"
-          java -version
-          bubblewrap build --manifest twa-manifest.json --directory out --output ./build --no-install --no-input
+          PATH: $JAVA_HOME/bin:$PATH
+        run: bubblewrap build --manifest twa-manifest.json --directory out --output ./build --no-install
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
