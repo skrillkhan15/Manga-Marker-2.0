@@ -8,23 +8,15 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  images: {
-    unoptimized: true, // Required for static export with gh-pages
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
-      },
-    ],
-  },
   output: 'export',
-  basePath: isGithubActions ? `/${repoName}` : '',
-  assetPrefix: isGithubActions ? `/${repoName}/` : '',
+  trailingSlash: true, // Recommended for GitHub Pages
+ images: {
+    unoptimized: true, // Required for static export if using <Image>
+  },
+  // If you're using next-themes or other dynamic imports, you may need this
+  experimental: {
+    typedRoutes: true,
+  },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
