@@ -10,37 +10,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📦 Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: ⚙️ Set Up Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: 20
 
-      - name: 📥 Install Dependencies
-        run: npm ci
-
-      - name: 🏗️ Build Next.js with Static Export
-        run: npm run build
-
-      - name: ☕ Set Up JDK 17
+      - name: Set up Java 17
         uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: 17
 
-      - name: 🌐 Install Bubblewrap CLI
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static site
+        run: npm run build
+
+      - name: Install Bubblewrap globally
         run: npm install -g @bubblewrap/cli@1.23.0
 
-      - name: 🧱 Build APK with Bubblewrap
-        env:
-          JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-        run: echo "no" | bubblewrap build --manifest twa-manifest.json
+      - name: Build TWA APK
+        run: |
+          echo "Using system JDK 17 at $JAVA_HOME"
+          bubblewrap build --manifest twa-manifest.json --jdkPath $JAVA_HOME
 
-      - name: ⬆️ Upload APK Artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: apk
-          path: "**/*.apk"
+          name: app-release
+          path: ./output/app-release.apk
