@@ -1,45 +1,40 @@
-name: Build TWA APK
+name: Build App
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      CI: true
+      JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.15-6/x64
+      BWRAP_INTERACTIVE: false  # 👈 prevents JDK prompt in bubblewrap
+      DEBIAN_FRONTEND: noninteractive  # 👈 avoid interactive prompts
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
-          node-version: 20
-
-      - name: Set up Java 17
-        uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: 17
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
-      - name: Build static site
+      - name: Build project
         run: npm run build
 
-      - name: Install Bubblewrap CLI
-        run: npm install -g @bubblewrap/cli@1.23.0
+      - name: Export static site
+        run: npm run export
 
-      - name: Build TWA APK
-        run: |
-          echo "Using system JDK 17 at $JAVA_HOME"
-          bubblewrap build --manifest twa-manifest.json --jdkPath $JAVA_HOME --no-install
-
-      - name: Upload built APK
+      - name: Upload production build
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: ./output/app-release.apk
+          name: build
+          path: out/
