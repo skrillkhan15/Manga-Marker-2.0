@@ -1,4 +1,4 @@
-name: Build APK
+name: Build TWA APK
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Node.js
@@ -30,7 +30,7 @@ jobs:
       - name: Build static site
         run: npm run build
 
-      - name: Install Bubblewrap globally
+      - name: Install Bubblewrap CLI
         run: npm install -g @bubblewrap/cli@1.23.0
 
       - name: Build TWA APK
@@ -38,8 +38,8 @@ jobs:
           echo "Using system JDK 17 at $JAVA_HOME"
           bubblewrap build --manifest twa-manifest.json --jdkPath $JAVA_HOME --no-install
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload built APK
+        uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: ./output/app-release.apk
