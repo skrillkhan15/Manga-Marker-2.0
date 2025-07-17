@@ -36,10 +36,10 @@ jobs:
       - name: Build TWA APK
         run: |
           echo "Using system JDK 17 at $JAVA_HOME"
-          bubblewrap build --manifest twa-manifest.json --jdkPath $JAVA_HOME
+          bubblewrap build --manifest twa-manifest.json --jdkPath $JAVA_HOME --no-install
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: app-release
           path: ./output/app-release.apk
